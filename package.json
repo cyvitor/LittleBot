@@ -1,0 +1,25 @@
+{
+  "name": "littlebot",
+  "version": "1.0.0",
+  "description": "pequeno script para abertura de ordens",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyvitor/LittleBot.git"
+  },
+  "author": "cyvitor",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cyvitor/LittleBot/issues"
+  },
+  "homepage": "https://github.com/cyvitor/LittleBot#readme",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "mysql2": "^3.1.2",
+    "node-binance-api": "^0.13.1",
+    "sequelize": "^6.28.0"
+  }
+}
