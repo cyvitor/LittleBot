@@ -1,7 +1,8 @@
-const escreveLog = require('./log');
-const execQuery = require('./execQuery');
-const { openFutureOrder } = require('./openFutureOrder');
-const log_file = "C:\\JS\\LittleBot\\log.txt";
+const { escreveLog, escreveLogJson } = require('./log');
+require('dotenv').config();
+const {execQuery, getOrdens, setOrderStateDone, getAccs } = require('./execQuery');
+const sendFutureOrder  = require('./binance');
+const log_file = "C:\\JS\\LittleBot\\logs\\log.txt";
 escreveLog('Init', log_file);
 
 // executar consulta a cada 5 segundos
@@ -13,20 +14,30 @@ setInterval(async () => {
     //console.log(ordens);
 
     ordens.forEach(async (orden) => {
-      const { id, symbol, side, type, quantity, price, stopPrice, testnet, status } = orden;
+      const { id, symbol, side, type, quantity, price, leverage, status } = orden;
       escreveLog(`Orden: ID: ${id}, Status: ${status}`, log_file);
       //const r = await setOrderStateDone(id);
 
       const accs = await getAccs();
-
-      accs.forEach(async (acc) => {
+      const promises = accs.map(async (acc) => {
         const { accid, apiKey, apiSecret } = acc;
         escreveLog(`ACC: ID: ${accid}, apiKey: ${apiKey}`, log_file);
-
-        //ENVIA ORDEM
+        escreveLog(`ACC: ID: ${accid}, apiSecret: ${apiSecret}`, log_file);
+        escreveLog(`ACC Orden: ID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
+        escreveLog(`ACC side: ${side}, type: ${type} quantity: ${quantity}`, log_file);
+        
+        // ENVIA ORDEM
+        (async () => {
+          try {
+            const result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage);
+            escreveLogJson(result, log_file);
+          } catch (error) {
+            escreveLogJson(error, log_file);
+          }
+        })();
         //
-
-      })
+      });
+      await Promise.all(promises);
 
     })
 
@@ -34,22 +45,3 @@ setInterval(async () => {
     console.error(err);
   }
 }, 5000);
-
-
-async function getOrdens() {
-  const query = 'SELECT * FROM ordens where status = 0';
-  const resultado = await execQuery(query);
-  return resultado;
-}
-
-async function setOrderStateDone(id) {
-  const query = 'UPDATE ordens SET status = 1 WHERE id = ' + id;
-  const resultado = await execQuery(query);
-  return resultado;
-}
-
-async function getAccs() {
-  const query = 'SELECT * FROM accs where status = 1';
-  const resultado = await execQuery(query);
-  return resultado;
-}
