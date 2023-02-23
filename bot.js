@@ -2,7 +2,7 @@ const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
 const {execQuery, getOrdens, setOrderStateDone, getAccs } = require('./execQuery');
 const sendFutureOrder  = require('./binance');
-const log_file = "C:\\JS\\LittleBot\\logs\\log.txt";
+const log_file = process.env.LOG;
 escreveLog('Init', log_file);
 
 // executar consulta a cada 5 segundos
