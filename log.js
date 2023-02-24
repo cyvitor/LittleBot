@@ -9,10 +9,10 @@ function escreveLog(msg, file) {
     });
 }
 
-function escreveLogJson(msg, file) {
+function escreveLogJson(txt, msg, file) {
     const dataHora = new Date().toLocaleString();
     const objetoString = JSON.stringify(msg);
-    const texto = `${dataHora} - ${objetoString}\n`;
+    const texto = `${dataHora} - ${txt} - ${objetoString}\n`;
     console.log(texto);
     fs.appendFile(file, texto, err => {
         if (err) throw err;

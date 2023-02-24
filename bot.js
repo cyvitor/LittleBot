@@ -1,7 +1,7 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
-const {execQuery, getOrdens, setOrderStateDone, getAccs } = require('./execQuery');
-const sendFutureOrder  = require('./binance');
+const { execQuery, getOrdens, setOrderStateDone, getAccs } = require('./execQuery');
+const { sendFutureOrder } = require('./binance');
 const log_file = process.env.LOG;
 escreveLog('Init', log_file);
 
@@ -14,9 +14,9 @@ setInterval(async () => {
     //console.log(ordens);
 
     ordens.forEach(async (orden) => {
-      const { id, symbol, side, type, quantity, price, leverage, status } = orden;
-      escreveLog(`Orden: ID: ${id}, Status: ${status}`, log_file);
-      //const r = await setOrderStateDone(id);
+      const { id, symbol, side, type, quantity, price, leverage, openClose, status } = orden;
+      escreveLog(`Orden: ID: ${id}, openClose: ${openClose}, Status: ${status}`, log_file);
+      const r = await setOrderStateDone(id);
 
       const accs = await getAccs();
       const promises = accs.map(async (acc) => {
@@ -25,14 +25,14 @@ setInterval(async () => {
         escreveLog(`ACC: ID: ${accid}, apiSecret: ${apiSecret}`, log_file);
         escreveLog(`ACC Orden: ID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
         escreveLog(`ACC side: ${side}, type: ${type} quantity: ${quantity}`, log_file);
-        
+
         // ENVIA ORDEM
         (async () => {
           try {
             const result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage);
-            escreveLogJson(result, log_file);
+            escreveLogJson(`ACC: ID: ${accid}`, result, log_file);
           } catch (error) {
-            escreveLogJson(error, log_file);
+            escreveLogJson(`ACC: ID: ${accid}`, error, log_file);
           }
         })();
         //
@@ -44,4 +44,4 @@ setInterval(async () => {
   } catch (err) {
     console.error(err);
   }
-}, 5000);
+}, process.env.SETINTERVAL);
