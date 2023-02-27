@@ -1,6 +1,6 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
-const { execQuery, getOrdens, setOrderStateDone, getAccs } = require('./execQuery');
+const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg } = require('./execQuery');
 const { sendFutureOrder } = require('./binance');
 const log_file = process.env.LOG;
 escreveLog('Init', log_file);
@@ -8,32 +8,38 @@ escreveLog('Init', log_file);
 // executar consulta a cada 5 segundos
 setInterval(async () => {
   try {
-    escreveLog('Exec', log_file);
+    //escreveLog('Exec', log_file);
+    console.log('Exec')
 
     const ordens = await getOrdens();
     //console.log(ordens);
 
     ordens.forEach(async (orden) => {
       const { id, symbol, side, type, quantity, price, leverage, openClose, status } = orden;
-      escreveLog(`Orden: ID: ${id}, openClose: ${openClose}, Status: ${status}`, log_file);
+      escreveLog(`OrdemID: ${id}, openClose: ${openClose}, Status: ${status}`, log_file);
       const r = await setOrderStateDone(id);
 
       const accs = await getAccs();
       const promises = accs.map(async (acc) => {
         const { accid, apiKey, apiSecret } = acc;
-        escreveLog(`ACC: ID: ${accid}, apiKey: ${apiKey}`, log_file);
-        escreveLog(`ACC: ID: ${accid}, apiSecret: ${apiSecret}`, log_file);
-        escreveLog(`ACC Orden: ID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
-        escreveLog(`ACC side: ${side}, type: ${type} quantity: ${quantity}`, log_file);
+        escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
+        
+        // caso fechamento de ordem, verificar se a conta entrou na ordem
 
         // ENVIA ORDEM
         (async () => {
           try {
-            const result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage);
-            escreveLogJson(`ACC: ID: ${accid}`, result, log_file);
+            result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage);
+            escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}`, result, log_file);
+            if (result['orderId']) {
+              saveAccOrder(accid, id, result['orderId'], result['status'], result['origQty'], result['executedQty'], result['type'], result['side']);
+            } else {
+              saveMsg(accid, result['msg'], result['code']);
+            }
           } catch (error) {
-            escreveLogJson(`ACC: ID: ${accid}`, error, log_file);
+            escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}, ERROR:`, error, log_file);
           }
+
         })();
         //
       });

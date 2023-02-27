@@ -33,9 +33,23 @@ async function getAccs() {
   return resultado;
 }
 
+async function saveAccOrder(accid, id, orderId, status, origQty, executedQty, type, side) {
+  const query = `INSERT INTO accs_orders (acc_id, order_id, orderId, status, origQty, executedQty, type, side, datatime)VALUES(${accid}, ${id}, '${orderId}', '${status}', ${origQty}, ${executedQty}, '${type}', '${side}', now())`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function saveMsg(accid, msg, msg_code) {
+  const query = `INSERT INTO acc_msg (acc_id, msg, msg_code, datatime)VALUES(${accid}, '${msg}', '${msg_code}', now())`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
   setOrderStateDone,
-  getAccs
+  getAccs,
+  saveAccOrder,
+  saveMsg
 };
