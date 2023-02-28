@@ -16,7 +16,7 @@ async function execQuery(query) {
 }
 
 async function getOrdens() {
-  const query = 'SELECT * FROM ordens where status = 0';
+  const query = 'SELECT * FROM ordens where status IN (0, 2)';
   const resultado = await execQuery(query);
   return resultado;
 }
@@ -45,11 +45,25 @@ async function saveMsg(accid, msg, msg_code) {
   return resultado;
 }
 
+async function setOrderStateClosed(id) {
+  const query = 'UPDATE ordens SET status = 3 WHERE id = ' + id;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function getAccOnOrder(id) {
+  const query = 'SELECT o.acc_id as accid, o.order_id, o.origQty as quant, a.apiKey, a.apiSecret FROM accs_orders o, accs a WHERE o.acc_id=a.accid AND order_id = ' + id;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
   setOrderStateDone,
   getAccs,
   saveAccOrder,
-  saveMsg
+  saveMsg,
+  setOrderStateClosed,
+  getAccOnOrder
 };

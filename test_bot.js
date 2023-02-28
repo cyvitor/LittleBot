@@ -1,16 +1,11 @@
-const {  saveAccOrder, saveMsg } = require('./execQuery');
+const { getOrdens } = require('./execQuery');
 
-const accid = 20;
-const id = 30;
-const orderId = 12345678
-const status = 'NEW';
-const origQty = 1;
-const executedQty = 2;
-const type = 'MARKET';
-const side = 'BUY';
-const msg = 'MSG TEste';
-const msg_code = '2010';
+getOrdens().then(ordens => {
+    console.log(ordens);
+    let r = ordens[0]["params"];
 
-//saveAccOrder(accid, id, orderId, status, origQty, executedQty, type, side);
-
-//saveMsg(accid, msg, msg_code);
+    if(ordens[0]["params"]){
+        const params = JSON.parse(r);
+        console.log(params.closeOrderID);
+    }
+});
