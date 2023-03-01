@@ -57,6 +57,12 @@ async function getAccOnOrder(id) {
   return resultado;
 }
 
+async function getOrdersProgrammed() {
+  const query = 'SELECT * FROM ordens where status IN (4, 5)';
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -65,5 +71,6 @@ module.exports = {
   saveAccOrder,
   saveMsg,
   setOrderStateClosed,
-  getAccOnOrder
+  getAccOnOrder,
+  getOrdersProgrammed
 };

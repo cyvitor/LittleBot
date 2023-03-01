@@ -87,6 +87,8 @@ setInterval(async () => {
 
     })
 
+    // VERIFICAR ORDENS PROGRAMADAS E ALTERAR O STATUS
+    
   } catch (err) {
     console.error(err);
   }
