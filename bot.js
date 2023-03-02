@@ -1,10 +1,11 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
-const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder } = require('./execQuery');
+const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose } = require('./execQuery');
 const { sendFutureOrder } = require('./binance');
+const { ws } = require('./bot_ws');
 const log_file = process.env.LOG;
-escreveLog('Init', log_file);
-
+escreveLog('Init BOT', log_file);
+ws();
 // executar consulta a cada 5 segundos
 setInterval(async () => {
   try {
@@ -15,7 +16,7 @@ setInterval(async () => {
     //console.log(ordens);
 
     ordens.forEach(async (orden) => {
-      const { id, symbol, side, type, quantity, price, leverage, status } = orden;
+      const { id, symbol, side, type, quantity, price, leverage, status, stopPrice } = orden;
       escreveLog(`OrdemID: ${id}, Status: ${status}`, log_file);
 
       if (status == 0) {
@@ -55,15 +56,15 @@ setInterval(async () => {
         const accs = await getAccOnOrder(id);
         const promises = accs.map(async (acc) => {
           const { accid, apiKey, apiSecret, quant } = acc;
-         
-          if(side === 'BUY'){
+
+          if (side === 'BUY') {
             side2 = 'SELL';
-          }else{
+          } else {
             side2 = 'BUY';
           }
 
           escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Side: ${side2} Status: ${status}`, log_file);
-          
+
           // ENVIA ORDEM
           (async () => {
             try {
@@ -80,15 +81,20 @@ setInterval(async () => {
 
           })();
           //        
-        
+
         });
         await Promise.all(promises);
+      } else if (status == 1) {
+        if (!!stopPrice) {
+          setOrdersProgrammedClose(id);
+          escreveLog(`OrdemID: ${id}, Stop loss: ${stopPrice} Set status 5`, log_file);
+        }
       }
 
     })
 
     // VERIFICAR ORDENS PROGRAMADAS E ALTERAR O STATUS
-    
+
   } catch (err) {
     console.error(err);
   }

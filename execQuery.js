@@ -16,7 +16,7 @@ async function execQuery(query) {
 }
 
 async function getOrdens() {
-  const query = 'SELECT * FROM ordens where status IN (0, 2)';
+  const query = 'SELECT * FROM ordens where status IN (0, 1, 2)';
   const resultado = await execQuery(query);
   return resultado;
 }
@@ -63,6 +63,24 @@ async function getOrdersProgrammed() {
   return resultado;
 }
 
+async function setStartOrder(id) {
+  const query = 'UPDATE ordens SET status = 0 WHERE id = ' + id;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function setOrdersProgrammedClose(id) {
+  const query = 'UPDATE ordens SET status = 5 WHERE id = ' + id;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function setStopOrder(id) {
+  const query = 'UPDATE ordens SET status = 2 WHERE id = ' + id;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -72,5 +90,8 @@ module.exports = {
   saveMsg,
   setOrderStateClosed,
   getAccOnOrder,
-  getOrdersProgrammed
+  getOrdersProgrammed,
+  setStartOrder,
+  setOrdersProgrammedClose,
+  setStopOrder
 };
