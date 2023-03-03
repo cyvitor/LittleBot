@@ -16,10 +16,11 @@ setInterval(async () => {
     //console.log(ordens);
 
     ordens.forEach(async (orden) => {
-      const { id, symbol, side, type, quantity, price, leverage, status, stopPrice } = orden;
-      escreveLog(`OrdemID: ${id}, Status: ${status}`, log_file);
+      const { id, symbol, side, type, quantity, price, leverage, status, target1, stopLoss} = orden;
+      console.log(`OrdemID: ${id}, Status: ${status}`);
 
       if (status == 0) {
+        escreveLog(`OrdemID: ${id}, Status: ${status}`, log_file);
         console.log("ABRE posição");
         const r = await setOrderStateDone(id);
 
@@ -49,6 +50,7 @@ setInterval(async () => {
         });
         await Promise.all(promises);
       } else if (status == 2) {
+        escreveLog(`OrdemID: ${id}, Status: ${status}`, log_file);
         console.log("Fecha posição");
         const r = await setOrderStateClosed(id);
         let side2 = null;
@@ -85,9 +87,9 @@ setInterval(async () => {
         });
         await Promise.all(promises);
       } else if (status == 1) {
-        if (!!stopPrice) {
+        if (!!target1 || !!stopLoss) {
           setOrdersProgrammedClose(id);
-          escreveLog(`OrdemID: ${id}, Stop loss: ${stopPrice} Set status 5`, log_file);
+          escreveLog(`OrdemID: ${id}, Target1: ${target1} Stop loss: ${stopLoss} Set status 5`, log_file);
         }
       }
 
