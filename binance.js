@@ -1,5 +1,10 @@
 const Binance = require('node-binance-api');
 
+const binanceConfig = {
+  recvWindow: 60000,
+  test: process.env.TEST,
+};
+
 async function sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage) {
   let orderResult;
   // Configuração da conexão com a API
@@ -7,13 +12,7 @@ async function sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, 
   const binance = new Binance({
     APIKEY: apiKey,
     APISECRET: apiSecret,
-    recvWindow: 60000,
-    test: process.env.TEST,
-    /*
-    urls: {
-        base: 'https://testnet.binancefuture.com/'
-        // base: 'https://testnet.binance.vision/api/'
-    }*/
+    ...binanceConfig,
   });
   if (leverage) {
     const leverageinfo = await binance.futuresLeverage(symbol, leverage);
@@ -38,6 +37,20 @@ async function sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, 
   return orderResult;
 }
 
+async function accFuturesBalance(apiKey, apiSecret) {
+  
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+
+  const acc = await binance.futuresBalance();
+  
+  return acc;
+}
+
 module.exports = {
-  sendFutureOrder
+  sendFutureOrder,
+  accFuturesBalance
 };

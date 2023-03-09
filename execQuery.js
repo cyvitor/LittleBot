@@ -81,6 +81,28 @@ async function setStopOrder(id) {
   return resultado;
 }
 
+async function updateBalance(accid, asset, balance, availableBalance) {
+  const query = `SELECT * FROM accs_balances WHERE accid = ${accid} AND asset = '${asset}'`;
+  const resultado = await execQuery(query);
+  if (resultado.length > 0) {
+    const queryUpdate = `UPDATE accs_balances SET balance = '${balance}', availableBalance = '${availableBalance}', datatime = now() WHERE accid = ${accid} AND asset = '${asset}' `;
+    const resultado1 = await execQuery(queryUpdate);
+  } else {
+    if (balance > 0 && availableBalance > 0) {
+      const queryInsert = `INSERT INTO accs_balances (accid, asset, balance, availableBalance, datatime)VALUES(${accid}, '${asset}', '${balance}', '${availableBalance}', now())`;
+      const resultado1 = await execQuery(queryInsert);
+    }
+  }
+  return resultado;
+}
+
+async function updateAccInvestiment(accid, investment) {
+  const invest = Math.floor(investment * 100) / 100;
+  const query = `UPDATE accs SET investment = '${invest}' WHERE accid = ${accid}`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -93,5 +115,7 @@ module.exports = {
   getOrdersProgrammed,
   setStartOrder,
   setOrdersProgrammedClose,
-  setStopOrder
+  setStopOrder,
+  updateBalance,
+  updateAccInvestiment
 };
