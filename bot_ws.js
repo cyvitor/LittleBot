@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { getOrdens, getOrdersProgrammed, setStartOrder, setStopOrder } = require('./execQuery');
+const { getOrdens, getOrdersProgrammed, setStartOrder, setStopOrder, updatePrice } = require('./execQuery');
 const { escreveLog, escreveLogJson } = require('./log');
 const log_file = process.env.LOG_WS;
 const WebSocket = require('ws');
@@ -23,17 +23,18 @@ function ws() {
             //console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} startPrice: ${startPrice} target1: ${target1} ticker = ${tickerC}`);
 
             if (tickerC) {
+                updatePrice(id, tickerC);
                 if (status == 4) {
                     console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} ticker = ${tickerC} ${startOp} startPrice: ${startPrice}`);
                     if (startOp === '<') {
                         if (tickerC <= startPrice) {
                             escreveLog(`ID: ${id} Inicia posição t1: ${tickerC} <= ${startPrice}`, log_file);
-                            setStartOrder(id);
+                            setStartOrder(id, tickerC);
                         }
                     } else {
                         if (tickerC >= startPrice) {
                             escreveLog(`ID: ${id} Inicia posição t2: ${tickerC} >= ${startPrice}`, log_file);
-                            setStartOrder(id);
+                            setStartOrder(id, tickerC);
                         }
                     }
                 } else if (status == 5) {
@@ -41,18 +42,18 @@ function ws() {
                     if (side === 'BUY') {
                         if (!!target1 && tickerC >= target1) {
                             escreveLog(`ID: ${id} Fecha posição comprada: ${tickerC} >= ${target1}`, log_file);
-                            setStopOrder(id);
+                            setStopOrder(id, tickerC);
                         } else if (!!stopLoss && tickerC <= stopLoss) {
                             escreveLog(`ID: ${id} Fecha posição comprada STOP LOSS: ${tickerC} <= ${stopLoss}`, log_file);
-                            setStopOrder(id);
+                            setStopOrder(id, tickerC);
                         }
                     } else if (side === 'SELL') {
                         if (!!target1 && tickerC <= target1) {
                             escreveLog(`ID: ${id} Fecha posição vendida: ${tickerC} <= ${target1}`, log_file);
-                            setStopOrder(id);
+                            setStopOrder(id, tickerC);
                         } else if (!!stopLoss && tickerC >= stopLoss) {
                             escreveLog(`ID: ${id} Fecha posição vendida STOP LOSS: ${tickerC} >= ${target1}`, log_file);
-                            setStopOrder(id);
+                            setStopOrder(id, tickerC);
                         }
                     }
                 }

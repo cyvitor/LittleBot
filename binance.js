@@ -50,7 +50,21 @@ async function accFuturesBalance(apiKey, apiSecret) {
   return acc;
 }
 
+async function futuresExchangeInfo(apiKey, apiSecret) {
+  
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+
+  const info = await binance.futuresExchangeInfo();
+  return info;
+}
+
+
 module.exports = {
   sendFutureOrder,
-  accFuturesBalance
+  accFuturesBalance,
+  futuresExchangeInfo
 };

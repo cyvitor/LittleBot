@@ -1,6 +1,6 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
-const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose } = require('./execQuery');
+const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose, getOrdens2 } = require('./execQuery');
 const { sendFutureOrder } = require('./binance');
 const { ws } = require('./bot_ws');
 const { updateAccsbalances } = require('./bot_accs_b');
@@ -30,12 +30,14 @@ setInterval(async () => {
       //escreveLog('Exec', log_file);
       console.log('Exec')
 
-      const ordens = await getOrdens();
+      const ordens = await getOrdens2();
       //console.log(ordens);
 
       ordens.forEach(async (orden) => {
-        const { id, symbol, side, type, quantity, price, leverage, status, target1, stopLoss } = orden;
+        const { id, symbol, side, type, quantity, price, leverage, status, target1, stopLoss, quantityPrecision, SymbolStatus } = orden;
         console.log(`OrdemID: ${id}, Status: ${status}`);
+
+        //verificar se o price é vazio, se sim, consultar preco
 
         if (status == 0) {
           escreveLog(`OrdemID: ${id}, Status: ${status}`, log_file);
@@ -44,15 +46,15 @@ setInterval(async () => {
 
           const accs = await getAccs();
           const promises = accs.map(async (acc) => {
-            const { accid, apiKey, apiSecret } = acc;
+            const { accid, apiKey, apiSecret, investment } = acc;
             escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
 
-            // verificar procentagem de entrada
-
+            const amount = calcAmount(investment, quantity, price, quantityPrecision);
+            escreveLog(`ACCID: ${accid}, OrdemID: ${id}, %: ${quantity} amount: ${amount}`, log_file);
             // ENVIA ORDEM
             (async () => {
               try {
-                result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage);
+                result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, amount, price, leverage);
                 escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}`, result, log_file);
                 if (result['orderId']) {
                   saveAccOrder(accid, id, result['orderId'], result['status'], result['origQty'], result['executedQty'], result['type'], result['side']);
@@ -119,3 +121,11 @@ setInterval(async () => {
     console.error(err);
   }
 }, process.env.SETINTERVAL);
+
+
+function calcAmount(investment, percentage, currentPrice, decimalPlaces) {
+  const result = (investment * percentage) / 100;
+  const amount = result / currentPrice;
+  const fator = Math.pow(10, decimalPlaces - 1);
+  return Math.floor(amount * fator) / fator;
+}
