@@ -26,15 +26,20 @@ function ws() {
                 updatePrice(id, tickerC);
                 if (status == 4) {
                     console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} ticker = ${tickerC} ${startOp} startPrice: ${startPrice}`);
-                    if (startOp === '<') {
-                        if (tickerC <= startPrice) {
-                            escreveLog(`ID: ${id} Inicia posição t1: ${tickerC} <= ${startPrice}`, log_file);
-                            setStartOrder(id, tickerC);
-                        }
-                    } else {
-                        if (tickerC >= startPrice) {
-                            escreveLog(`ID: ${id} Inicia posição t2: ${tickerC} >= ${startPrice}`, log_file);
-                            setStartOrder(id, tickerC);
+                    if (startPrice == 0) {
+                        setStartOrder(id, tickerC);
+                        escreveLog(`ID: ${id} Inicia posição NOW`, log_file);
+                    }else{
+                        if (startOp === '<') {
+                            if (tickerC <= startPrice) {
+                                escreveLog(`ID: ${id} Inicia posição t1: ${tickerC} <= ${startPrice}`, log_file);
+                                setStartOrder(id, tickerC);
+                            }
+                        } else {
+                            if (tickerC >= startPrice) {
+                                escreveLog(`ID: ${id} Inicia posição t2: ${tickerC} >= ${startPrice}`, log_file);
+                                setStartOrder(id, tickerC);
+                            }
                         }
                     }
                 } else if (status == 5) {
@@ -61,5 +66,5 @@ function ws() {
         })
     }
 }
-//ws(); // TESTE E DEBUG
-module.exports = { ws };
+ws(); // TESTE E DEBUG
+//module.exports = { ws };
