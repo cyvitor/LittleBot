@@ -66,5 +66,5 @@ function ws() {
         })
     }
 }
-ws(); // TESTE E DEBUG
-//module.exports = { ws };
+//ws(); // TESTE E DEBUG
+module.exports = { ws };
