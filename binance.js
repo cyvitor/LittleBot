@@ -1,4 +1,6 @@
 const Binance = require('node-binance-api');
+const axios = require('axios');
+const crypto = require('crypto');
 
 let binanceConfig
 
@@ -70,8 +72,43 @@ async function futuresExchangeInfo(apiKey, apiSecret) {
   return info;
 }
 
+
+async function getfuturesIncome(apiKey, apiSecret) {
+
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+
+  const result = await binance.futuresIncome({ incomeType: "TRANSFER" });
+
+  if ('code' in result) {
+    const newResult = result;
+    return newResult;
+  } else {
+    const newResult = result.map(item => {
+      const date = new Date(item.time);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const hours = String(date.getUTCHours()).padStart(2, '0');
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+      const datatime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      return {
+        ...item,
+        datatime: datatime
+      };
+    });
+    return newResult;
+  }
+
+}
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
-  futuresExchangeInfo
+  futuresExchangeInfo,
+  getfuturesIncome
 };

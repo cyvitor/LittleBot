@@ -47,8 +47,8 @@ setInterval(async () => {
           const accs = await getAccs();
           const promises = accs.map(async (acc) => {
             const { accid, apiKey, apiSecret, investment } = acc;
-            escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Symbol: ${symbol} Status: ${status}`, log_file);
-
+            escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Symbol: ${symbol} Status: ${status} Price: ${price}`, log_file);
+    
             const amount = calcAmount(investment, quantity, price, quantityPrecision);
             escreveLog(`ACCID: ${accid}, OrdemID: ${id}, %: ${quantity} amount: ${amount}`, log_file);
             // ENVIA ORDEM
@@ -126,6 +126,6 @@ setInterval(async () => {
 function calcAmount(investment, percentage, currentPrice, decimalPlaces) {
   const result = (investment * percentage) / 100;
   const amount = result / currentPrice;
-  const fator = Math.pow(10, decimalPlaces - 1);
+  const fator = 10 ** decimalPlaces;
   return Math.floor(amount * fator) / fator;
 }
