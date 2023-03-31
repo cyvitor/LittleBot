@@ -1,9 +1,10 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
 const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose, getOrdens2 } = require('./execQuery');
-const { sendFutureOrder } = require('./binance');
+const { sendFutureOrder, sendFutureReduceOnly } = require('./binance');
 const { ws } = require('./bot_ws');
 const { updateAccsbalances } = require('./bot_accs_b');
+const { calcAmount, runActionEvery30min } = require('./fx');
 const log_file = process.env.LOG;
 escreveLog('Init BOT', log_file);
 ws();
@@ -48,7 +49,7 @@ setInterval(async () => {
           const promises = accs.map(async (acc) => {
             const { accid, apiKey, apiSecret, investment } = acc;
             escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Symbol: ${symbol} Status: ${status} Price: ${price}`, log_file);
-    
+
             const amount = calcAmount(investment, quantity, price, quantityPrecision);
             escreveLog(`ACCID: ${accid}, OrdemID: ${id}, %: ${quantity} amount: ${amount}`, log_file);
             // ENVIA ORDEM
@@ -90,7 +91,7 @@ setInterval(async () => {
             // ENVIA ORDEM
             (async () => {
               try {
-                result = await sendFutureOrder(apiKey, apiSecret, symbol, side2, type, quant, price, leverage);
+                result = await sendFutureReduceOnly(apiKey, apiSecret, symbol, side2, quant);
                 escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}`, result, log_file);
                 if (result['orderId']) {
                   saveAccOrder(accid, id, result['orderId'], result['status'], result['origQty'], result['executedQty'], result['type'], result['side']);
@@ -123,9 +124,4 @@ setInterval(async () => {
 }, process.env.SETINTERVAL);
 
 
-function calcAmount(investment, percentage, currentPrice, decimalPlaces) {
-  const result = (investment * percentage) / 100;
-  const amount = result / currentPrice;
-  const fator = 10 ** decimalPlaces;
-  return Math.floor(amount * fator) / fator;
-}
+runActionEvery30min();

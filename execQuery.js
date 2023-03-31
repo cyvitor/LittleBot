@@ -63,7 +63,7 @@ async function saveAccOrder(accid, id, orderId, status, origQty, executedQty, ty
 }
 
 async function saveMsg(accid, msg, msg_code) {
-  const query = `INSERT INTO acc_msg (acc_id, msg, msg_code, datatime)VALUES(${accid}, '${msg}', '${msg_code}', now())`;
+  const query = `INSERT INTO acc_msg (acc_id, msg, msg_code, datatime)VALUES(${accid}, "${msg}", "${msg_code}", now())`;
   const resultado = await execQuery(query);
   return resultado;
 }
@@ -138,10 +138,28 @@ async function insertSymbol(symbol, quantityPrecision, baseAssetPrecision, quote
   return result;
 }
 
+async function updateSymbol(id, symbol, quantityPrecision, baseAssetPrecision, quotePrecision, status, baseAsset, quoteAsset) {
+  const query = `UPDATE symbols SET symbol = '${symbol}', quantityPrecision = '${quantityPrecision}', baseAssetPrecision = '${baseAssetPrecision}', quotePrecision = '${quotePrecision}', status = '${status}', baseAsset = '${baseAsset}', quoteAsset = '${quoteAsset}' WHERE symbols_id = ${id}`;
+  const result = await execQuery2(query);
+  return result;
+}
+
+async function getAllBdSymbols(){
+  const query = `SELECT symbols_id, symbol, status, quantityPrecision FROM symbols`;
+  const result = await execQuery2(query);
+  return result;
+}
+
 async function updatePrice(id, price) {
   const query = `UPDATE ordens SET price = ${price} WHERE id = ${id}`;
   const resultado = await execQuery(query);
   return resultado;
+}
+
+async function getAcc(id) {
+  const query = 'SELECT * FROM accs where accid = ' + id;
+  const resultado = await execQuery(query);
+  return resultado[0];
 }
 
 module.exports = {
@@ -161,6 +179,9 @@ module.exports = {
   updateAccInvestiment,
   clearSymbols,
   insertSymbol,
+  updateSymbol,
+  getAllBdSymbols,
   getOrdens2,
-  updatePrice
+  updatePrice,
+  getAcc
 };

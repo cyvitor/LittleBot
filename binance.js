@@ -106,9 +106,28 @@ async function getfuturesIncome(apiKey, apiSecret) {
 
 }
 
+async function sendFutureReduceOnly(apiKey, apiSecret, symbol, side, quantity) {
+  let orderResult;
+  // Configuração da conexão com a API
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+  // Cria a ordem
+  if (side === 'BUY') {
+    orderResult = await binance.futuresMarketBuy(symbol, quantity, {reduceOnly: true});
+  } else {
+    orderResult = await binance.futuresMarketSell(symbol, quantity, {reduceOnly: true});
+  }
+  console.log(orderResult);
+  return orderResult;
+}
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
   futuresExchangeInfo,
-  getfuturesIncome
+  getfuturesIncome,
+  sendFutureReduceOnly
 };
