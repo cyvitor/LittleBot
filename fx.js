@@ -30,11 +30,9 @@ async function getInfo() {
                 updateBD = true;
             }
             if (updateBD) {
-                console.log("UPDATE ");
                 updateSymbol(find.symbols_id, symbol, quantityPrecision, baseAssetPrecision, quotePrecision, status, baseAsset, quoteAsset)
             }
         } else {
-            console.log("INSERT ");
             insertSymbol(symbol, quantityPrecision, baseAssetPrecision, quotePrecision, status, baseAsset, quoteAsset);
         }
 

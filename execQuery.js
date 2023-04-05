@@ -105,18 +105,23 @@ async function setStopOrder(id, price) {
 }
 
 async function updateBalance(accid, asset, balance, availableBalance) {
+  let changed = false;
   const query = `SELECT * FROM accs_balances WHERE accid = ${accid} AND asset = '${asset}'`;
   const resultado = await execQuery2(query);
   if (resultado.length > 0) {
-    const queryUpdate = `UPDATE accs_balances SET balance = '${balance}', availableBalance = '${availableBalance}', datatime = now() WHERE accid = ${accid} AND asset = '${asset}' `;
-    const resultado1 = await execQuery2(queryUpdate);
+    if (resultado[0]["balance"] != balance || resultado[0]["availableBalance"] != availableBalance) {
+      const queryUpdate = `UPDATE accs_balances SET balance = '${balance}', availableBalance = '${availableBalance}', datatime = now() WHERE accid = ${accid} AND asset = '${asset}' `;
+      const resultado1 = await execQuery2(queryUpdate);
+      changed = true;
+    }
   } else {
     if (balance > 0 && availableBalance > 0) {
       const queryInsert = `INSERT INTO accs_balances (accid, asset, balance, availableBalance, datatime)VALUES(${accid}, '${asset}', '${balance}', '${availableBalance}', now())`;
       const resultado1 = await execQuery2(queryInsert);
+      changed = true;
     }
   }
-  return resultado;
+  return changed;
 }
 
 async function updateAccInvestiment(accid, investment) {
@@ -144,7 +149,7 @@ async function updateSymbol(id, symbol, quantityPrecision, baseAssetPrecision, q
   return result;
 }
 
-async function getAllBdSymbols(){
+async function getAllBdSymbols() {
   const query = `SELECT symbols_id, symbol, status, quantityPrecision FROM symbols`;
   const result = await execQuery2(query);
   return result;
