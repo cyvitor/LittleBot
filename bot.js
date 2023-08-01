@@ -3,7 +3,7 @@ require('dotenv').config();
 const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose, getOrdens2 } = require('./execQuery');
 const { sendFutureOrder, sendFutureReduceOnly } = require('./binance');
 const { ws } = require('./bot_ws');
-const { updateAccsbalances } = require('./bot_accs_b');
+const { updateAccsbalances, updateOrderStatus } = require('./bot_accs_b');
 const { calcAmount, runActionEvery30min } = require('./fx');
 const log_file = process.env.LOG;
 escreveLog('Init BOT', log_file);
@@ -16,6 +16,7 @@ setInterval(async () => {
     // definimos o estado de execução como verdadeiro
     isUpdatingAccounts = true;
     await updateAccsbalances();
+    await updateOrderStatus();
   } catch (err) {
     console.error(err);
   } finally {
@@ -86,7 +87,7 @@ setInterval(async () => {
               side2 = 'BUY';
             }
 
-            escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Side: ${side2} Status: ${status}`, log_file);
+            escreveLog(`ACCID: ${accid}, OrdemID: ${id}, Side: ${side2}, Q: ${quant}, Status: ${status}`, log_file);
 
             // ENVIA ORDEM
             (async () => {

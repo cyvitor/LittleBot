@@ -1,6 +1,6 @@
 require('dotenv').config();
-const { accFuturesBalance, getfuturesIncome } = require('./binance');
-const { getAccs, updateBalance, updateAccInvestiment } = require('./execQuery');
+const { accFuturesBalance, getfuturesIncome, getOrderStatus } = require('./binance');
+const { getAccs, updateBalance, updateAccInvestiment, updateOrder, getNewOrders } = require('./execQuery');
 const { escreveLog, escreveLogJson } = require('./log');
 const log_file = process.env.LOG_ACCS;
 
@@ -38,7 +38,33 @@ async function updateAccsbalances() {
     }
 }
 
+async function updateOrderStatus() {
+    const ordens = await getNewOrders();
+    const promises = ordens.map(async (orden) => {
+        const { accs_orders_id, orderId, symbol, apiKey, apiSecret, accid } = orden;
+        console.log(`Check ${accs_orders_id} ${orderId}`);
+        (async () => {
+            try {
+                result = await getOrderStatus(apiKey, apiSecret, symbol, orderId);
+                console.log(result);
+                escreveLogJson(`ACCID: ${accs_orders_id}, OrdemID: ${orderId}`, result, log_file);
+                if (result['orderId']) {
+                    updateOrder(accs_orders_id, result['status'], result['executedQty'], result['avgPrice']);
+                } else {
+                    saveMsg(accid, result['msg'], result['code']);
+                }
+            } catch (error) {
+                escreveLogJson(`ACCID: ${accid}, OrdemID: ${orderId}, ERROR:`, error, log_file);
+            }
+
+        })();
+    });
+    await Promise.all(promises);
+}
 //updateAccsbalances();
 //setInterval(updateAccsbalances, process.env.SETINTERVAL_UPDATEACC);
 
-module.exports = { updateAccsbalances };
+module.exports = {
+    updateAccsbalances,
+    updateOrderStatus
+};

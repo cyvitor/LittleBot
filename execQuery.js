@@ -167,6 +167,24 @@ async function getAcc(id) {
   return resultado[0];
 }
 
+async function getFirstAcc() {
+  const query = 'SELECT * FROM accs WHERE status = 1 LIMIT 1';
+  const resultado = await execQuery(query);
+  return resultado[0];
+}
+
+async function getNewOrders() {
+  const query = 'SELECT o.accs_orders_id, o.orderId, s.symbol, o.status, a.accid, a.apiKey, a.apiSecret FROM accs_orders o, ordens s, accs a WHERE s.id=o.order_id AND a.accid=o.acc_id AND o.status <> "FILLED"';
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function updateOrder(id, status, executedQty, avgPrice) {
+  const query = `UPDATE accs_orders SET status = '${status}', executedQty = ${executedQty}, avgPrice = ${avgPrice} WHERE accs_orders_id = ${id}`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -188,5 +206,8 @@ module.exports = {
   getAllBdSymbols,
   getOrdens2,
   updatePrice,
-  getAcc
+  getAcc,
+  getFirstAcc,
+  getNewOrders,
+  updateOrder
 };

@@ -124,10 +124,23 @@ async function sendFutureReduceOnly(apiKey, apiSecret, symbol, side, quantity) {
   return orderResult;
 }
 
+async function getOrderStatus(apiKey, apiSecret, symbol, orderId) {
+
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+
+  const info = await binance.futuresOrderStatus( symbol, {orderId: orderId} )
+  return info;
+}
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
   futuresExchangeInfo,
   getfuturesIncome,
-  sendFutureReduceOnly
+  sendFutureReduceOnly,
+  getOrderStatus
 };

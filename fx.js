@@ -10,8 +10,8 @@ function calcAmount(investment, percentage, currentPrice, decimalPlaces) {
 
 async function getInfo() {
     const { futuresExchangeInfo } = require('./binance');
-    const { getAcc, getAllBdSymbols, updateSymbol, insertSymbol } = require('./execQuery');
-    const acc = await getAcc(1);
+    const { getFirstAcc, getAllBdSymbols, updateSymbol, insertSymbol } = require('./execQuery');
+    const acc = await getFirstAcc();
     const info = await futuresExchangeInfo(acc.apiKey, acc.apiSecret);
     const allBdSymbols = await getAllBdSymbols();
     info.symbols.forEach((symbolInfo) => {
