@@ -149,7 +149,36 @@ async function getFuturesOpenOrders(apiKey, apiSecret) {
 
 }
 
+async function getActivePositions(apiKey, apiSecret) {
+  const endpoint = 'https://fapi.binance.com/fapi/v2/account';
+  const timestamp = Date.now();
+  const params = `timestamp=${timestamp}&recvWindow=5000`;
 
+  const signature = crypto
+    .createHmac('sha256', apiSecret)
+    .update(params)
+    .digest('hex');
+
+  const url = `${endpoint}?${params}&signature=${signature}`;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-MBX-APIKEY': apiKey,
+  };
+
+  return axios
+    .get(url, { headers })
+    .then((response) => {
+      const activePositions = response.data.positions.filter(
+        (position) => parseFloat(position.positionAmt) !== 0
+      );
+      return activePositions;
+    })
+    .catch((error) => {
+      console.error('Erro ao obter posições ativas no mercado de futuros da Binance:', error.message);
+      return null;
+    });
+}
 
 module.exports = {
   sendFutureOrder,
@@ -159,4 +188,5 @@ module.exports = {
   sendFutureReduceOnly,
   getOrderStatus,
   getFuturesOpenOrders,
+  getActivePositions
 };
