@@ -14,7 +14,7 @@ async function updateAccsbalances() {
             //escreveLog(`ACCID: ${accid}, invest: ${investment}, apiKey: ${apiKey}`, log_file);
             try {
                 balances = await accFuturesBalance(apiKey, apiSecret);
-                deposits = await getfuturesIncome(apiKey, apiSecret);
+                //deposits = await getfuturesIncome(apiKey, apiSecret);
                 if (balances.code && balances.msg) {
                     escreveLogJson(`ACCID: ${accid} ERROR`, balances, log_file);
                 } else {

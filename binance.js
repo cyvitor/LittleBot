@@ -136,11 +136,27 @@ async function getOrderStatus(apiKey, apiSecret, symbol, orderId) {
   return info;
 }
 
+async function getFuturesOpenOrders(apiKey, apiSecret) {
+
+  const binance = new Binance({
+    APIKEY: apiKey,
+    APISECRET: apiSecret,
+    ...binanceConfig,
+  });
+
+  const positions = binance.futuresOpenOrders();
+  return positions;
+
+}
+
+
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
   futuresExchangeInfo,
   getfuturesIncome,
   sendFutureReduceOnly,
-  getOrderStatus
+  getOrderStatus,
+  getFuturesOpenOrders,
 };
