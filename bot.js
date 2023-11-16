@@ -1,7 +1,7 @@
 const { escreveLog, escreveLogJson } = require('./log');
 require('dotenv').config();
 const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg, setOrderStateClosed, getAccOnOrder, setOrdersProgrammedClose, getOrdens2 } = require('./execQuery');
-const { sendFutureOrder, sendFutureReduceOnly } = require('./binance');
+const { sendFutureOrder2, sendFutureReduceOnly2 } = require('./binance');
 const { ws } = require('./bot_ws');
 const { updateAccsbalances2, updateOrderStatus } = require('./bot_accs_b');
 const { calcAmount, runActionEvery30min } = require('./fx');
@@ -56,7 +56,7 @@ setInterval(async () => {
             // ENVIA ORDEM
             (async () => {
               try {
-                result = await sendFutureOrder(apiKey, apiSecret, symbol, side, type, amount, price, leverage);
+                result = await sendFutureOrder2(apiKey, apiSecret, symbol, side, type, amount, price, leverage);
                 escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}`, result, log_file);
                 if (result['orderId']) {
                   saveAccOrder(accid, id, result['orderId'], result['status'], result['origQty'], result['executedQty'], result['type'], result['side']);
@@ -92,7 +92,7 @@ setInterval(async () => {
             // ENVIA ORDEM
             (async () => {
               try {
-                result = await sendFutureReduceOnly(apiKey, apiSecret, symbol, side2, quant);
+                result = await sendFutureReduceOnly2(apiKey, apiSecret, symbol, side2, quant);
                 escreveLogJson(`ACCID: ${accid}, OrdemID: ${id}`, result, log_file);
                 if (result['orderId']) {
                   saveAccOrder(accid, id, result['orderId'], result['status'], result['origQty'], result['executedQty'], result['type'], result['side']);

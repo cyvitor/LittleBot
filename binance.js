@@ -180,6 +180,123 @@ async function getActivePositions(apiKey, apiSecret) {
     });
 }
 
+async function setLeverage(apiKey, apiSecret, symbol, leverage) {
+  const apiUrl = "https://fapi.binance.com";
+
+  if (!apiKey || !apiSecret)
+      throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
+
+  const data = {
+    symbol: symbol,
+    leverage: leverage
+  };
+
+  data.timestamp = Date.now();
+  data.recvWindow = 60000; // máximo permitido, default 5000
+
+  const signature = crypto
+      .createHmac('sha256', apiSecret)
+      .update(`${new URLSearchParams(data)}`)
+      .digest('hex');
+
+  const qs = `?${new URLSearchParams({ ...data, signature })}`;
+
+  try {
+      const result = await axios({
+          method: "POST",
+          url: `${apiUrl}/fapi/v1/leverage${qs}`,
+          headers: { 'X-MBX-APIKEY': apiKey }
+      });
+      return result.data;
+  } catch (err) {
+      console.error(err.response ? err.response : err);
+  }
+}
+
+async function sendFutureOrder2(apiKey, apiSecret, symbol, side, type, quantity, price, leverage) {
+  const apiUrl = "https://fapi.binance.com";
+  let orderResult, positionSide;
+
+  if (side == "BUY") {
+    positionSide = "LONG";
+  } else {
+    positionSide = "SHORT";
+  }
+
+  let data = { symbol: symbol, side: side, type: type, quantity: quantity, positionSide: positionSide };
+  
+  if (!apiKey || !apiSecret)
+      throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
+
+  data.timestamp = Date.now();
+  data.recvWindow = 60000;//máximo permitido, default 5000
+
+  const signature = crypto
+      .createHmac('sha256', apiSecret)
+      .update(`${new URLSearchParams(data)}`)
+      .digest('hex');
+
+  const qs = `?${new URLSearchParams({ ...data, signature })}`;
+
+  try {
+      await setLeverage(apiKey, apiSecret, symbol, leverage);
+      const result = await axios({
+          method: "POST",
+          url: `${apiUrl}/fapi/v1/order${qs}`,
+          headers: { 'X-MBX-APIKEY': apiKey }
+      });
+      return result.data;
+  } catch (err) {
+      console.error(err.response ? err.response : err);
+  }
+
+  console.log(orderResult);
+  return orderResult;
+}
+
+async function sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, quantity) {
+
+    const apiUrl = "https://fapi.binance.com";
+    let orderResult, positionSide, type;
+  
+    if (side == "BUY") {
+      positionSide = "SHORT";
+      type = "BUY";
+    } else {
+      positionSide = "LONG";
+      type = "SELL";      
+    }
+  
+    let data = { symbol: symbol, side: type, type: "MARKET", quantity: quantity, positionSide: positionSide };
+    
+    if (!apiKey || !apiSecret)
+        throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
+  
+    data.timestamp = Date.now();
+    data.recvWindow = 60000; // máximo permitido, default 5000
+  
+    const signature = crypto
+        .createHmac('sha256', apiSecret)
+        .update(`${new URLSearchParams(data)}`)
+        .digest('hex');
+  
+    const qs = `?${new URLSearchParams({ ...data, signature })}`;
+  
+    try {
+        const result = await axios({
+            method: "POST",
+            url: `${apiUrl}/fapi/v1/order${qs}`,
+            headers: { 'X-MBX-APIKEY': apiKey }
+        });
+        return result.data;
+    } catch (err) {
+        console.error(err.response ? err.response : err);
+    }
+  
+    console.log(orderResult);
+    return orderResult;
+}
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
@@ -188,5 +305,7 @@ module.exports = {
   sendFutureReduceOnly,
   getOrderStatus,
   getFuturesOpenOrders,
-  getActivePositions
+  getActivePositions,
+  sendFutureOrder2,
+  sendFutureReduceOnly2
 };
