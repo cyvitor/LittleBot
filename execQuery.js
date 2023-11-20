@@ -185,6 +185,90 @@ async function updateOrder(id, status, executedQty, avgPrice) {
   return resultado;
 }
 
+async function saveAccOrderOpen(accid, orderId, symbol, status, price, avgPrice, origQty, executedQty, type, reduceOnly, closePosition, side, positionSide, stopPrice, time) {
+  const query = `
+    INSERT INTO accs_orders_open (
+      acc_id,
+      order_id,
+      symbol,
+      status,
+      price,
+      avgPrice,
+      origQty,
+      executedQty,
+      type,
+      reduceOnly,
+      closePosition,
+      side,
+      positionSide,
+      stopPrice,
+      time
+    )
+    VALUES (
+      ${accid},
+      ${orderId},
+      '${symbol}',
+      '${status}',
+      ${price},
+      ${avgPrice},
+      ${origQty},
+      ${executedQty},
+      '${type}',
+      '${reduceOnly}',
+      '${closePosition}',
+      '${side}',
+      '${positionSide}',
+      ${stopPrice},
+      '${time}'
+    )`;
+
+  const resultado = await execQuery2(query);
+  return resultado;
+}
+
+async function check_orders_open(orderId) {
+  const query = `SELECT COUNT(*) AS count FROM accs_orders_open WHERE order_id = ${orderId}`;
+  const result = await execQuery(query);
+  return result[0].count > 0;
+}
+
+async function saveAccPosition(accid, symbol, unrealizedProfit, leverage, entryPrice, positionSide, positionAmt, updateTime, bidNotional, askNotional) {
+  const query = `
+    INSERT INTO accs_positions (
+      acc_id,
+      symbol,
+      unrealizedProfit,
+      leverage,
+      entryPrice,
+      positionSide,
+      positionAmt,
+      updateTime,
+      bidNotional,
+      askNotional
+    )
+    VALUES (
+      ${accid},
+      '${symbol}',
+      '${unrealizedProfit}',
+      ${leverage},
+      ${entryPrice},
+      '${positionSide}',
+      '${positionAmt}',
+      '${updateTime}',
+      '${bidNotional}',
+      '${askNotional}'
+    )`;
+
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function clearAccPositions(accid) {
+  const query = `DELETE FROM accs_positions WHERE acc_id = ${accid}`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -209,5 +293,9 @@ module.exports = {
   getAcc,
   getFirstAcc,
   getNewOrders,
-  updateOrder
+  updateOrder,
+  saveAccOrderOpen,
+  check_orders_open,
+  saveAccPosition,
+  clearAccPositions
 };
