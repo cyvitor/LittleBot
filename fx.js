@@ -88,9 +88,38 @@ async function updateAccsPositions() {
     await Promise.all(promises);
 }
 
+async function closePositions() {
+    const log_file = process.env.LOG;
+    const { escreveLog, escreveLogJson } = require('./log');
+    const { getPositionToClose } = require('./execQuery');
+    const { sendFutureReduceOnly2 } = require('./binance');
+    const positionsToClose = await getPositionToClose();
+    const promises = positionsToClose.map(async (p) => {
+        const { symbol, apiKey, apiSecret, positionSide, positionAmt, id } = p;
+        let side;
+        if(positionSide == "LONG"){
+            side = "SELL";
+        }else{
+            side = "BUY";
+        }
+        console.log(`CLOSE: ${symbol}, ${positionSide}, ${side}`);
+        (async () => {
+            try {
+                const order = await sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, positionAmt)
+            } catch (error) {
+                escreveLogJson(`ERRO fechar posicao: ${id}, ERROR:`, error, log_file);
+            }                
+        })();
+    });
+    await Promise.all(promises);
+
+    return positionsToClose;
+}
+
 module.exports = {
     runActionEvery30min,
     calcAmount,
     getInfo,
-    updateAccsPositions
+    updateAccsPositions,
+    closePositions
 }

@@ -269,6 +269,12 @@ async function clearAccPositions(accid) {
   return resultado;
 }
 
+async function getPositionToClose() {
+  const query = `SELECT p.id, p.symbol, p.positionSide, p.positionAmt, a.apiKey, a.apiSecret FROM accs_positions p, accs a WHERE p.acc_id=a.accid AND p.bot_status = 2`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -297,5 +303,6 @@ module.exports = {
   saveAccOrderOpen,
   check_orders_open,
   saveAccPosition,
-  clearAccPositions
+  clearAccPositions,
+  getPositionToClose
 };
