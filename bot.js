@@ -4,7 +4,7 @@ const { execQuery, getOrdens, setOrderStateDone, getAccs, saveAccOrder, saveMsg,
 const { sendFutureOrder2, sendFutureReduceOnly2 } = require('./binance');
 const { ws } = require('./bot_ws');
 const { updateAccsbalances2, updateOrderStatus } = require('./bot_accs_b');
-const { calcAmount, runActionEvery30min } = require('./fx');
+const { calcAmount, runActionEvery30min, updateAccsPositions} = require('./fx');
 const log_file = process.env.LOG;
 escreveLog('Init BOT', log_file);
 ws();
@@ -17,6 +17,7 @@ setInterval(async () => {
     isUpdatingAccounts = true;
     await updateAccsbalances2();
     await updateOrderStatus();
+    await updateAccsPositions();
   } catch (err) {
     console.error(err);
   } finally {
