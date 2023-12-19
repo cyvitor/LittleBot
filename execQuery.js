@@ -263,6 +263,40 @@ async function saveAccPosition(accid, symbol, unrealizedProfit, leverage, entryP
   return resultado;
 }
 
+async function checkAccPosition(accid, symbol, entryPrice, positionAmt) {
+  const query = `
+    SELECT *
+    FROM accs_positions
+    WHERE acc_id = ${accid}
+      AND symbol = '${symbol}'
+      AND entryPrice = ${entryPrice}
+      AND positionAmt = '${positionAmt}'`;
+
+  const result = await execQuery(query);
+
+  // Se houver registros, retorna o primeiro encontrado; caso contrário, retorna false.
+  return result.length > 0 ? result[0] : false;
+}
+
+async function updateAccPosition(id, unrealizedProfit, bidNotional, askNotional) {
+  const query = `
+    UPDATE accs_positions
+    SET
+      unrealizedProfit = '${unrealizedProfit}',
+      bidNotional = '${bidNotional}',
+      askNotional = '${askNotional}'
+    WHERE id = ${id}`;
+
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
+async function deleteAccPositions(id) {
+  const query = `DELETE FROM accs_positions WHERE id = ${id}`;
+  const resultado = await execQuery(query);
+  return resultado;
+}
+
 async function clearAccPositions(accid) {
   const query = `DELETE FROM accs_positions WHERE acc_id = ${accid}`;
   const resultado = await execQuery(query);
@@ -304,5 +338,8 @@ module.exports = {
   check_orders_open,
   saveAccPosition,
   clearAccPositions,
-  getPositionToClose
+  getPositionToClose,
+  checkAccPosition,
+  updateAccPosition,
+  deleteAccPositions
 };

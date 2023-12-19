@@ -52,19 +52,36 @@ async function runActionEvery30min() {
 
 async function updateAccsPositions() {
     const log_file = process.env.LOG;
-    const { getActivePositions,  } = require('./binance');
-    const { saveAccPosition, clearAccPositions, getAccs } = require('./execQuery');
-    const { escreveLog, escreveLogJson } = require('./log');
+    const { getActivePositions } = require('./binance');
+    const { saveAccPosition, getAccs, checkAccPosition, updateAccPosition } = require('./execQuery');
+    const { escreveLogJson } = require('./log');
     const accs = await getAccs();
     const promises = accs.map(async (acc) => {
         const { accid, apiKey, apiSecret } = acc;
         console.log(`Verifica positions ACCID: ${accid}`);
-        (async () => {
-            try {
-                const positions = await getActivePositions(apiKey, apiSecret);
-                if (positions.length > 0) {
-                    await clearAccPositions(accid);
-                    for (const position of positions) {
+        try {
+            const positions = await getActivePositions(apiKey, apiSecret);
+            if (positions.length > 0) {
+                for (const position of positions) {
+                    // Verifica se a posição já existe no banco de dados
+                    const positionExists = await checkAccPosition(
+                        accid,
+                        position.symbol,
+                        position.entryPrice,
+                        position.positionAmt
+                    );
+
+                    if (positionExists) {
+                        // Se a posição existe, atualiza os dados
+                        await updateAccPosition(
+                            positionExists.id,
+                            position.unrealizedProfit,
+                            position.bidNotional,
+                            position.askNotional
+                        );
+                        console.log(`Posição existente atualizada: ${position.symbol}`);
+                    } else {
+                        // Se a posição não existe, salva no banco
                         await saveAccPosition(
                             accid,
                             position.symbol,
@@ -77,38 +94,41 @@ async function updateAccsPositions() {
                             position.bidNotional,
                             position.askNotional
                         );
+                        console.log(`Nova posição salva: ${position.symbol}`);
                     }
                 }
-            } catch (error) {
-                escreveLogJson(`Verifica positions ACCID: ${accid}, ERROR:`, error, log_file);
             }
-
-        })();
+        } catch (error) {
+            escreveLogJson(`Verifica positions ACCID: ${accid}, ERROR:`, error, log_file);
+        }
     });
+
     await Promise.all(promises);
 }
 
 async function closePositions() {
     const log_file = process.env.LOG;
     const { escreveLog, escreveLogJson } = require('./log');
-    const { getPositionToClose } = require('./execQuery');
+    const { getPositionToClose, deleteAccPositions } = require('./execQuery');
     const { sendFutureReduceOnly2 } = require('./binance');
     const positionsToClose = await getPositionToClose();
     const promises = positionsToClose.map(async (p) => {
         const { symbol, apiKey, apiSecret, positionSide, positionAmt, id } = p;
         let side;
-        if(positionSide == "LONG"){
+        if (positionSide == "LONG") {
             side = "SELL";
-        }else{
+        } else {
             side = "BUY";
         }
         console.log(`CLOSE: ${symbol}, ${positionSide}, ${side}`);
         (async () => {
             try {
                 const order = await sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, positionAmt)
+                console.log(order);
+                await deleteAccPositions(id);
             } catch (error) {
                 escreveLogJson(`ERRO fechar posicao: ${id}, ERROR:`, error, log_file);
-            }                
+            }
         })();
     });
     await Promise.all(promises);
