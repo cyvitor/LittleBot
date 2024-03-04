@@ -1,6 +1,7 @@
 const Binance = require('node-binance-api');
 const axios = require('axios');
 const crypto = require('crypto');
+const ccxt = require('ccxt');
 
 let binanceConfig
 
@@ -297,6 +298,36 @@ async function sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, quantity) 
     return orderResult;
 }
 
+async function closeAllPositions(apiKey, apiSecret) {
+  const exchange = new ccxt.binance({
+      apiKey: apiKey,
+      secret: apiSecret,
+  });
+
+  // Carregar mercados
+  await exchange.loadMarkets();
+
+  // Obter todas as posições abertas
+  const positions = await exchange.fapiPrivate_get_positionrisk();
+
+  // Fechar todas as posições abertas
+  for (let position of positions) {
+      if (position.positionAmt > 0) {
+          await exchange.createOrder(position.symbol, 'market', 'sell', position.positionAmt);
+      } else if (position.positionAmt < 0) {
+          await exchange.createOrder(position.symbol, 'market', 'buy', -position.positionAmt);
+      }
+  }
+
+  // Obter todas as ordens abertas
+  const openOrders = await exchange.fetchOpenOrders();
+
+  // Cancelar todas as ordens abertas
+  for (let order of openOrders) {
+      await exchange.cancelOrder(order.id, order.symbol);
+  }
+}
+
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
@@ -307,5 +338,6 @@ module.exports = {
   getFuturesOpenOrders,
   getActivePositions,
   sendFutureOrder2,
-  sendFutureReduceOnly2
+  sendFutureReduceOnly2,
+  closeAllPositions
 };

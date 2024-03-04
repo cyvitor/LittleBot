@@ -1,15 +1,34 @@
 require('dotenv').config();
-const { getOrdens, getOrdersProgrammed, setStartOrder, setStopOrder, updatePrice } = require('./execQuery');
-const { escreveLog, escreveLogJson } = require('./log');
-const log_file = process.env.LOG_WS;
 const WebSocket = require('ws');
-//const url = `${process.env.STREAM_URL}btcusdt@markPrice@1s`
+const { getOrdens, getOrdersProgrammed, setStartOrder, setStopOrder, updatePrice } = require('./execQuery');
+const { escreveLog } = require('./log');
+const log_file = process.env.LOG_WS;
 
-function ws() {
-    const url = `${process.env.STREAM_URL}!ticker@arr`
-    const ws = new WebSocket(url);
-    console.log(url);
+let ws;
+let reconnectInterval = 1000 * 60 * 60; // 1 hora para reconectar
+let checkConnectionInterval = 1000 * 60; // Verifica a conexão a cada 1 minuto
+
+function connectWebSocket() {
     escreveLog('Init BOT WS', log_file);
+    const url = `${process.env.STREAM_URL}!ticker@arr`;
+    ws = new WebSocket(url);
+
+    ws.on('open', () => {
+        console.log('WebSocket connected');
+        escreveLog('WebSocket connected', log_file);
+    });
+
+    ws.on('close', () => {
+        console.log('WebSocket disconnected, attempting to reconnect...');
+        escreveLog('WebSocket disconnected, attempting to reconnect...', log_file);
+        setTimeout(connectWebSocket, reconnectInterval);
+    });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        escreveLog(`WebSocket error: ${error}`, log_file);
+        // Não é necessário reconectar aqui se já estamos tratando no 'close'
+    });
 
     ws.onmessage = async (event) => {
         //console.clear();
@@ -64,7 +83,20 @@ function ws() {
                 }
             }
         })
+    }    
+}
+
+function checkConnection() {
+    if (!ws || ws.readyState === WebSocket.CLOSED) {
+        console.log('WebSocket is closed. Attempting to reconnect...');
+        escreveLog('WebSocket is closed. Attempting to reconnect...', log_file);
+        connectWebSocket();
     }
 }
-//ws(); // TESTE E DEBUG
-module.exports = { ws };
+// Verifica a conexão periodicamente
+setInterval(checkConnection, checkConnectionInterval);
+
+// Inicia a conexão WebSocket pela primeira vez
+//connectWebSocket();
+
+module.exports = { ws: connectWebSocket };
