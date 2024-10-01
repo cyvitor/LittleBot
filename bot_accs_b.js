@@ -70,7 +70,7 @@ async function updateAccsbalances2() {
         const accs = await getAccs();
         const promises = accs.map(async (acc) => {
             const { accid, apiKey, apiSecret, investment } = acc;
-            //escreveLog(`ACCID: ${accid}, invest: ${investment}, apiKey: ${apiKey}`, log_file);
+            escreveLog(`ACCID: ${accid}, invest: ${investment}, apiKey: ${apiKey}`, log_file);
             try {
                 balances = await accFuturesBalance(apiKey, apiSecret);
                 //deposits = await getfuturesIncome(apiKey, apiSecret);

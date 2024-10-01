@@ -4,6 +4,12 @@ const log_file_task_sch = process.env.LOG_TASK_SCH;
 function calcAmount(investment, percentage, currentPrice, decimalPlaces) {
     const result = (investment * percentage) / 100;
     const amount = result / currentPrice;
+    
+    if (decimalPlaces === 0) {
+        // Se decimalPlaces for zero, arredondar para o número inteiro mais próximo
+        return Math.floor(amount); // ou Math.round(amount) se quiser arredondar para o valor mais próximo
+    }
+    
     const fator = 10 ** decimalPlaces;
     return Math.floor(amount * fator) / fator;
 }
@@ -44,7 +50,7 @@ async function runActionEvery30min() {
     while (true) {
         escreveLog ("INIT runActionEvery30min", log_file_task_sch);
         await getInfo();
-        await updateAccsPositions();
+        //await updateAccsPositions();
         escreveLog ("END runActionEvery30min", log_file_task_sch);
         await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000)); // espera 30 minutos
     }

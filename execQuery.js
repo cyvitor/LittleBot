@@ -27,9 +27,22 @@ const pool = mysql.createPool({
 
 async function execQuery2(query) {
   const connection = await pool.getConnection();
-  const [rows] = await connection.execute(query);
-  connection.release();
-  return rows;
+  try {
+    const [rows] = await connection.execute(query);
+    return rows;
+  } finally {
+    connection.release();
+  }
+}
+
+async function execQuery3(query, params = []) {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.execute(query, params);
+    return rows;
+  } finally {
+    connection.release();
+  }
 }
 
 async function getOrdens() {
@@ -82,6 +95,12 @@ async function getAccOnOrder(id) {
 
 async function getOrdersProgrammed() {
   const query = 'SELECT * FROM ordens where status IN (4, 5)';
+  const resultado = await execQuery2(query);
+  return resultado;
+}
+
+async function getOrdersOpenAndProgrammed() {
+  const query = 'SELECT * FROM ordens where status IN (1, 4, 5)';
   const resultado = await execQuery2(query);
   return resultado;
 }
@@ -156,8 +175,8 @@ async function getAllBdSymbols() {
 }
 
 async function updatePrice(id, price) {
-  const query = `UPDATE ordens SET price = ${price} WHERE id = ${id}`;
-  const resultado = await execQuery2(query);
+  const query = `UPDATE ordens SET price = ? WHERE id = ?`;
+  const resultado = await execQuery3(query, [price, id]);
   return resultado;
 }
 
@@ -341,5 +360,6 @@ module.exports = {
   getPositionToClose,
   checkAccPosition,
   updateAccPosition,
-  deleteAccPositions
+  deleteAccPositions,
+  getOrdersOpenAndProgrammed
 };
