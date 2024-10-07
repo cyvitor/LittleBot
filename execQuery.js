@@ -58,8 +58,8 @@ async function getOrdens2() {
 }
 
 async function setOrderStateDone(id) {
-  const query = 'UPDATE ordens SET status = 1 WHERE id = ' + id;
-  const resultado = await execQuery2(query);
+  const query = 'UPDATE ordens SET status = 1 WHERE id = ?';
+  const resultado = await execQuery3(query, [id]);
   return resultado;
 }
 
@@ -69,27 +69,36 @@ async function getAccs() {
   return resultado;
 }
 
+// Função saveAccOrder
 async function saveAccOrder(accid, id, orderId, status, origQty, executedQty, type, side) {
-  const query = `INSERT INTO accs_orders (acc_id, order_id, orderId, status, origQty, executedQty, type, side, datatime)VALUES(${accid}, ${id}, '${orderId}', '${status}', ${origQty}, ${executedQty}, '${type}', '${side}', now())`;
-  const resultado = await execQuery2(query);
+  const query = `INSERT INTO accs_orders (acc_id, order_id, orderId, status, origQty, executedQty, type, side, datatime)
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, now())`;
+  const resultado = await execQuery3(query, [accid, id, orderId, status, origQty, executedQty, type, side]);
   return resultado;
 }
 
+// Função saveMsg
 async function saveMsg(accid, msg, msg_code) {
-  const query = `INSERT INTO acc_msg (acc_id, msg, msg_code, datatime)VALUES(${accid}, "${msg}", "${msg_code}", now())`;
-  const resultado = await execQuery2(query);
+  const query = `INSERT INTO acc_msg (acc_id, msg, msg_code, datatime)
+                 VALUES(?, ?, ?, now())`;
+  const resultado = await execQuery3(query, [accid, msg, msg_code]);
   return resultado;
 }
 
+// Função setOrderStateClosed
 async function setOrderStateClosed(id) {
-  const query = 'UPDATE ordens SET status = 3 WHERE id = ' + id;
-  const resultado = await execQuery2(query);
+  const query = 'UPDATE ordens SET status = 3 WHERE id = ?';
+  const resultado = await execQuery3(query, [id]);
   return resultado;
 }
 
+// Função getAccOnOrder
 async function getAccOnOrder(id) {
-  const query = 'SELECT o.acc_id as accid, o.order_id, o.origQty as quant, a.apiKey, a.apiSecret FROM accs_orders o, accs a WHERE o.acc_id=a.accid AND order_id = ' + id;
-  const resultado = await execQuery2(query);
+  const query = `SELECT o.acc_id as accid, o.order_id, o.origQty as quant, a.apiKey, a.apiSecret
+                 FROM accs_orders o
+                 JOIN accs a ON o.acc_id = a.accid
+                 WHERE o.order_id = ?`;
+  const resultado = await execQuery3(query, [id]);
   return resultado;
 }
 
