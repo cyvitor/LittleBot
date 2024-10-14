@@ -208,8 +208,8 @@ async function getNewOrders() {
 }
 
 async function updateOrder(id, status, executedQty, avgPrice) {
-  const query = `UPDATE accs_orders SET status = '${status}', executedQty = ${executedQty}, avgPrice = ${avgPrice} WHERE accs_orders_id = ${id}`;
-  const resultado = await execQuery2(query);
+  const query = `UPDATE accs_orders SET status = ?, executedQty = ?, avgPrice = ? WHERE accs_orders_id = ?`;
+  const resultado = await execQuery3(query, [status, executedQty, avgPrice, id]);
   return resultado;
 }
 
@@ -232,31 +232,15 @@ async function saveAccOrderOpen(accid, orderId, symbol, status, price, avgPrice,
       stopPrice,
       time
     )
-    VALUES (
-      ${accid},
-      ${orderId},
-      '${symbol}',
-      '${status}',
-      ${price},
-      ${avgPrice},
-      ${origQty},
-      ${executedQty},
-      '${type}',
-      '${reduceOnly}',
-      '${closePosition}',
-      '${side}',
-      '${positionSide}',
-      ${stopPrice},
-      '${time}'
-    )`;
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  const resultado = await execQuery2(query);
+  const resultado = await execQuery3(query, [accid, orderId, symbol, status, price, avgPrice, origQty, executedQty, type, reduceOnly, closePosition, side, positionSide, stopPrice, time]);
   return resultado;
 }
 
 async function check_orders_open(orderId) {
-  const query = `SELECT COUNT(*) AS count FROM accs_orders_open WHERE order_id = ${orderId}`;
-  const result = await execQuery2(query);
+  const query = `SELECT COUNT(*) AS count FROM accs_orders_open WHERE order_id = ?`;
+  const result = await execQuery3(query, [orderId]);
   return result[0].count > 0;
 }
 
@@ -274,20 +258,9 @@ async function saveAccPosition(accid, symbol, unrealizedProfit, leverage, entryP
       bidNotional,
       askNotional
     )
-    VALUES (
-      ${accid},
-      '${symbol}',
-      '${unrealizedProfit}',
-      ${leverage},
-      ${entryPrice},
-      '${positionSide}',
-      '${positionAmt}',
-      '${updateTime}',
-      '${bidNotional}',
-      '${askNotional}'
-    )`;
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  const resultado = await execQuery2(query);
+  const resultado = await execQuery3(query, [accid, symbol, unrealizedProfit, leverage, entryPrice, positionSide, positionAmt, updateTime, bidNotional, askNotional]);
   return resultado;
 }
 
@@ -295,14 +268,13 @@ async function checkAccPosition(accid, symbol, entryPrice, positionAmt) {
   const query = `
     SELECT *
     FROM accs_positions
-    WHERE acc_id = ${accid}
-      AND symbol = '${symbol}'
-      AND entryPrice = ${entryPrice}
-      AND positionAmt = '${positionAmt}'`;
+    WHERE acc_id = ?
+      AND symbol = ?
+      AND entryPrice = ?
+      AND positionAmt = ?`;
 
-  const result = await execQuery2(query);
+  const result = await execQuery3(query, [accid, symbol, entryPrice, positionAmt]);
 
-  // Se houver registros, retorna o primeiro encontrado; caso contrário, retorna false.
   return result.length > 0 ? result[0] : false;
 }
 
@@ -310,24 +282,24 @@ async function updateAccPosition(id, unrealizedProfit, bidNotional, askNotional)
   const query = `
     UPDATE accs_positions
     SET
-      unrealizedProfit = '${unrealizedProfit}',
-      bidNotional = '${bidNotional}',
-      askNotional = '${askNotional}'
-    WHERE id = ${id}`;
+      unrealizedProfit = ?,
+      bidNotional = ?,
+      askNotional = ?
+    WHERE id = ?`;
 
-  const resultado = await execQuery2(query);
+  const resultado = await execQuery3(query, [unrealizedProfit, bidNotional, askNotional, id]);
   return resultado;
 }
 
 async function deleteAccPositions(id) {
-  const query = `DELETE FROM accs_positions WHERE id = ${id}`;
-  const resultado = await execQuery2(query);
+  const query = `DELETE FROM accs_positions WHERE id = ?`;
+  const resultado = await execQuery3(query, [id]);
   return resultado;
 }
 
 async function clearAccPositions(accid) {
-  const query = `DELETE FROM accs_positions WHERE acc_id = ${accid}`;
-  const resultado = await execQuery2(query);
+  const query = `DELETE FROM accs_positions WHERE acc_id = ?`;
+  const resultado = await execQuery3(query, [accid]);
   return resultado;
 }
 
