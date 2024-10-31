@@ -223,86 +223,111 @@ async function sendFutureOrder2(apiKey, apiSecret, symbol, side, type, quantity,
   const apiUrl = "https://fapi.binance.com";
   let orderResult, positionSide;
 
-  if (side == "BUY") {
-    positionSide = "LONG";
+  if (side === "BUY") {
+      positionSide = "LONG";
   } else {
-    positionSide = "SHORT";
+      positionSide = "SHORT";
   }
 
-  let data = { symbol: symbol, side: side, type: type, quantity: quantity, positionSide: positionSide };
-  
-  if (!apiKey || !apiSecret)
-      throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
-  
-  const serverTime = await syncServerTime();
-  data.timestamp = serverTime;
-  data.recvWindow = 60000;//máximo permitido, default 5000
+  if (!apiKey || !apiSecret) throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
 
-  const signature = crypto
-      .createHmac('sha256', apiSecret)
-      .update(`${new URLSearchParams(data)}`)
-      .digest('hex');
+  for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+          const serverTime = await syncServerTime();
+          const data = {
+              symbol,
+              side,
+              type,
+              quantity,
+              positionSide,
+              timestamp: serverTime,
+              recvWindow: 60000
+          };
 
-  const qs = `?${new URLSearchParams({ ...data, signature })}`;
+          const signature = crypto
+              .createHmac('sha256', apiSecret)
+              .update(`${new URLSearchParams(data)}`)
+              .digest('hex');
 
-  try {
-      await setLeverage(apiKey, apiSecret, symbol, leverage);
-      const result = await axios({
-          method: "POST",
-          url: `${apiUrl}/fapi/v1/order${qs}`,
-          headers: { 'X-MBX-APIKEY': apiKey }
-      });
-      return result.data;
-  } catch (err) {
-      console.error(err.response ? err.response : err);
+          const qs = `?${new URLSearchParams({ ...data, signature })}`;
+
+          await setLeverage(apiKey, apiSecret, symbol, leverage);
+          const result = await axios({
+              method: "POST",
+              url: `${apiUrl}/fapi/v1/order${qs}`,
+              headers: { 'X-MBX-APIKEY': apiKey }
+          });
+
+          return result.data;
+      } catch (err) {
+          if (err.response && err.response.data && err.response.data.code === -1021) {
+              console.error("Erro de Timestamp - Tentando novamente...", attempt + 1);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Espera antes de tentar novamente
+              continue;
+          } else {
+              console.error(err.response ? err.response : err);
+              break;
+          }
+      }
   }
 
-  console.log(orderResult);
-  return orderResult;
+  return null;
 }
 
 async function sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, quantity) {
+  const apiUrl = "https://fapi.binance.com";
+  let positionSide, type;
 
-    const apiUrl = "https://fapi.binance.com";
-    let orderResult, positionSide, type;
-  
-    if (side == "BUY") {
+  if (side === "BUY") {
       positionSide = "SHORT";
       type = "BUY";
-    } else {
+  } else {
       positionSide = "LONG";
-      type = "SELL";      
-    }
-  
-    let data = { symbol: symbol, side: type, type: "MARKET", quantity: quantity, positionSide: positionSide };
-    
-    if (!apiKey || !apiSecret)
-        throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
-  
-    const serverTime = await syncServerTime();
-    data.timestamp = serverTime;
-    data.recvWindow = 60000; // máximo permitido, default 5000
-  
-    const signature = crypto
-        .createHmac('sha256', apiSecret)
-        .update(`${new URLSearchParams(data)}`)
-        .digest('hex');
-  
-    const qs = `?${new URLSearchParams({ ...data, signature })}`;
-  
-    try {
-        const result = await axios({
-            method: "POST",
-            url: `${apiUrl}/fapi/v1/order${qs}`,
-            headers: { 'X-MBX-APIKEY': apiKey }
-        });
-        return result.data;
-    } catch (err) {
-        console.error(err.response ? err.response : err);
-    }
-  
-    console.log(orderResult);
-    return orderResult;
+      type = "SELL";
+  }
+
+  if (!apiKey || !apiSecret) throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+          const serverTime = await syncServerTime();
+          const data = {
+              symbol,
+              side: type,
+              type: "MARKET",
+              quantity,
+              positionSide,
+              timestamp: serverTime,
+              recvWindow: 60000
+          };
+
+          const signature = crypto
+              .createHmac('sha256', apiSecret)
+              .update(`${new URLSearchParams(data)}`)
+              .digest('hex');
+
+          const qs = `?${new URLSearchParams({ ...data, signature })}`;
+
+          const result = await axios({
+              method: "POST",
+              url: `${apiUrl}/fapi/v1/order${qs}`,
+              headers: { 'X-MBX-APIKEY': apiKey }
+          });
+
+          return result.data;
+      } catch (err) {
+          if (err.response && err.response.data && err.response.data.code === -1021) {
+              console.error("Erro de Timestamp - Tentando novamente...", attempt + 1);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Espera antes de tentar novamente
+              continue;
+          } else {
+              console.error(err.response ? err.response : err);
+              break;
+          }
+      }
+  }
+
+  return null;
 }
 
 async function closeAllPositions(apiKey, apiSecret) {
