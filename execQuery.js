@@ -115,40 +115,47 @@ async function getOrdersOpenAndProgrammed() {
 }
 
 async function setStartOrder(id, price) {
-  const query = `UPDATE ordens SET status = 0, price = '${price}' WHERE id = ${id}`;
-  const resultado = await execQuery2(query);
+  const query = 'UPDATE ordens SET status = ?, price = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [0, price, id]);
   return resultado;
 }
 
 async function setOrdersProgrammedClose(id) {
-  const query = 'UPDATE ordens SET status = 5 WHERE id = ' + id;
-  const resultado = await execQuery2(query);
+  const query = 'UPDATE ordens SET status = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [5, id]);
   return resultado;
 }
 
 async function setStopOrder(id, price) {
-  const query = `UPDATE ordens SET status = 2, price = ${price} WHERE id = ${id}`;
-  const resultado = await execQuery2(query);
+  const query = 'UPDATE ordens SET status = ?, price = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [2, price, id]);
   return resultado;
 }
 
 async function updateBalance(accid, asset, balance, availableBalance) {
   let changed = false;
-  const query = `SELECT * FROM accs_balances WHERE accid = ${accid} AND asset = '${asset}'`;
-  const resultado = await execQuery2(query);
+
+  // Query para selecionar o registro existente
+  const querySelect = 'SELECT * FROM accs_balances WHERE accid = ? AND asset = ?';
+  const resultado = await execQuery3(querySelect, [accid, asset]);
+
   if (resultado.length > 0) {
+    // Verifica se os valores de balance e availableBalance precisam ser atualizados
     if (resultado[0]["balance"] != balance || resultado[0]["availableBalance"] != availableBalance) {
-      const queryUpdate = `UPDATE accs_balances SET balance = '${balance}', availableBalance = '${availableBalance}', datatime = now() WHERE accid = ${accid} AND asset = '${asset}' `;
-      const resultado1 = await execQuery2(queryUpdate);
+      // Query para atualizar o registro existente
+      const queryUpdate = 'UPDATE accs_balances SET balance = ?, availableBalance = ?, datatime = now() WHERE accid = ? AND asset = ?';
+      await execQuery3(queryUpdate, [balance, availableBalance, accid, asset]);
       changed = true;
     }
   } else {
+    // Insere um novo registro se os valores de balance e availableBalance forem maiores que 0
     if (balance > 0 && availableBalance > 0) {
-      const queryInsert = `INSERT INTO accs_balances (accid, asset, balance, availableBalance, datatime)VALUES(${accid}, '${asset}', '${balance}', '${availableBalance}', now())`;
-      const resultado1 = await execQuery2(queryInsert);
+      const queryInsert = 'INSERT INTO accs_balances (accid, asset, balance, availableBalance, datatime) VALUES (?, ?, ?, ?, now())';
+      await execQuery3(queryInsert, [accid, asset, balance, availableBalance]);
       changed = true;
     }
   }
+
   return changed;
 }
 

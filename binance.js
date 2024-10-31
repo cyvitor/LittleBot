@@ -214,6 +214,11 @@ async function setLeverage(apiKey, apiSecret, symbol, leverage) {
   }
 }
 
+async function syncServerTime() {
+    const response = await axios.get('https://fapi.binance.com/fapi/v1/time');
+    return response.data.serverTime;
+}
+
 async function sendFutureOrder2(apiKey, apiSecret, symbol, side, type, quantity, price, leverage) {
   const apiUrl = "https://fapi.binance.com";
   let orderResult, positionSide;
@@ -228,8 +233,9 @@ async function sendFutureOrder2(apiKey, apiSecret, symbol, side, type, quantity,
   
   if (!apiKey || !apiSecret)
       throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
-
-  data.timestamp = Date.now();
+  
+  const serverTime = await syncServerTime();
+  data.timestamp = serverTime;
   data.recvWindow = 60000;//máximo permitido, default 5000
 
   const signature = crypto
@@ -273,7 +279,8 @@ async function sendFutureReduceOnly2(apiKey, apiSecret, symbol, side, quantity) 
     if (!apiKey || !apiSecret)
         throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
   
-    data.timestamp = Date.now();
+    const serverTime = await syncServerTime();
+    data.timestamp = serverTime;
     data.recvWindow = 60000; // máximo permitido, default 5000
   
     const signature = crypto
