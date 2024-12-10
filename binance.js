@@ -3,17 +3,12 @@ const axios = require('axios');
 const crypto = require('crypto');
 const ccxt = require('ccxt');
 
-let binanceConfig
+let binanceConfig = {
+  recvWindow: 60000,
+};
 
 if (process.env.TEST === "TRUE") {
-  binanceConfig = {
-    recvWindow: 60000,
-    test: process.env.TEST,
-  };
-} else {
-  binanceConfig = {
-    recvWindow: 60000,
-  };
+  binanceConfig.test = true; // Não adicione valores inválidos
 }
 
 async function sendFutureOrder(apiKey, apiSecret, symbol, side, type, quantity, price, leverage) {
@@ -360,6 +355,139 @@ async function closeAllPositions(apiKey, apiSecret) {
   }
 }
 
+async function sendSpotOrder(apiKey, apiSecret, symbol, side, type, quantity, price = null) {
+  const apiUrl = "https://api.binance.com";
+  
+  if (!apiKey || !apiSecret) {
+      throw new Error('Preencha corretamente sua API KEY e SECRET KEY');
+  }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+          // Obtém o horário do servidor
+          const serverTime = await syncServerTime();
+
+          // Monta os dados da ordem
+          const data = {
+              symbol,
+              side,
+              type,
+              quantity,
+              timestamp: serverTime,
+              recvWindow: 60000
+          };
+
+          // Inclui o preço somente se for uma ordem LIMIT
+          if (type === "LIMIT" && price) {
+              data.price = price;
+              data.timeInForce = "GTC"; // Good-Till-Cancelled
+          }
+
+          // Calcula a assinatura
+          const signature = crypto
+              .createHmac('sha256', apiSecret)
+              .update(`${new URLSearchParams(data)}`)
+              .digest('hex');
+
+          const qs = `?${new URLSearchParams({ ...data, signature })}`;
+
+          // Envia a ordem
+          const result = await axios({
+              method: "POST",
+              url: `${apiUrl}/api/v3/order${qs}`,
+              headers: { 'X-MBX-APIKEY': apiKey }
+          });
+
+          return result.data;
+      } catch (err) {
+          if (err.response && err.response.data && err.response.data.code === -1021) {
+              console.error("Erro de Timestamp - Tentando novamente...", attempt + 1);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda antes de tentar novamente
+              continue;
+          } else {
+              console.error(err.response ? err.response : err);
+              break;
+          }
+      }
+  }
+
+  return null; // Retorna null se todas as tentativas falharem
+}
+
+async function accSpotBalance(apiKey, apiSecret) {
+  const baseUrl = 'https://api.binance.com';
+  const endpoint = '/api/v3/account';
+
+  try {
+      // Obtém o timestamp atual
+      const timestamp = Date.now();
+
+      // Cria os parâmetros necessários
+      const queryParams = new URLSearchParams({
+          timestamp,
+      });
+
+      // Gera a assinatura
+      const signature = crypto
+          .createHmac('sha256', apiSecret)
+          .update(queryParams.toString())
+          .digest('hex');
+
+      // Adiciona a assinatura nos parâmetros
+      queryParams.append('signature', signature);
+
+      // Faz a requisição para a API
+      const response = await axios.get(`${baseUrl}${endpoint}?${queryParams.toString()}`, {
+          headers: {
+              'X-MBX-APIKEY': apiKey,
+          },
+      });
+
+      // Retorna os saldos de forma organizada
+      const balances = response.data.balances
+          .filter(balance => parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0)
+          .map(balance => ({
+              asset: balance.asset,
+              free: parseFloat(balance.free),
+              locked: parseFloat(balance.locked),
+          }));
+
+      return balances;
+  } catch (err) {
+      console.error('Erro ao obter saldos spot:', err.response?.data || err.message);
+      throw err;
+  }
+}
+async function getExchangeInfo() {
+  const baseUrl = "https://api.binance.com/api/v3/exchangeInfo";
+
+  try {
+      const response = await fetch(baseUrl);
+
+      // Verifica se a resposta foi bem-sucedida
+      if (!response.ok) {
+          throw new Error(`Erro na API: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Mapeia os pares com informações relevantes, incluindo o status
+      const pairsInfo = data.symbols.map(pair => ({
+          symbol: pair.symbol,
+          baseAsset: pair.baseAsset,
+          quoteAsset: pair.quoteAsset,
+          status: pair.status, // Adicionado o status de trading
+          tickSize: pair.filters.find(filter => filter.filterType === "PRICE_FILTER")?.tickSize || "N/A",
+          minQty: pair.filters.find(filter => filter.filterType === "LOT_SIZE")?.minQty || "N/A",
+      }));
+
+      return pairsInfo;
+
+  } catch (error) {
+      console.error("Erro ao obter exchange info:", error);
+      return null;
+  }
+}
 module.exports = {
   sendFutureOrder,
   accFuturesBalance,
@@ -371,5 +499,8 @@ module.exports = {
   getActivePositions,
   sendFutureOrder2,
   sendFutureReduceOnly2,
-  closeAllPositions
+  closeAllPositions,
+  sendSpotOrder,
+  accSpotBalance,
+  getExchangeInfo
 };

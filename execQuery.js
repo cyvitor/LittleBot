@@ -57,8 +57,20 @@ async function getOrdens2() {
   return resultado;
 }
 
+async function getOrdens2Spot() {
+  const query = 'SELECT o.id, o.symbol, o.quantity, o.price, o.status, o.target1, o.stopLoss, s.minQty, s.status_spot as SymbolStatus  FROM ordens_spot o, symbols s WHERE s.symbol=o.symbol AND o.status IN (0, 1, 2)';
+  const resultado = await execQuery2(query);
+  return resultado;
+}
+
 async function setOrderStateDone(id) {
   const query = 'UPDATE ordens SET status = 1 WHERE id = ?';
+  const resultado = await execQuery3(query, [id]);
+  return resultado;
+}
+
+async function setOrderSpotStateDone(id) {
+  const query = 'UPDATE ordens_spot SET status = 1 WHERE id = ?';
   const resultado = await execQuery3(query, [id]);
   return resultado;
 }
@@ -159,6 +171,34 @@ async function updateBalance(accid, asset, balance, availableBalance) {
   return changed;
 }
 
+async function updateBalanceSpot(accid, asset, free, locked) {
+  let changed, a = false;
+
+  // Query para selecionar o registro existente
+  const querySelect = 'SELECT * FROM accs_balances_spot WHERE accid = ? AND asset = ?';
+  const resultado = await execQuery3(querySelect, [accid, asset]);
+  
+  if (resultado.length > 0) {
+    // Verifica se os valores de free e locked precisam ser atualizados
+    if (resultado[0]["free"] != free || resultado[0]["locked"] != locked) {
+      // Query para atualizar o registro existente
+      const queryUpdate = 'UPDATE accs_balances_spot SET free = ?, locked = ?, datatime = now() WHERE accid = ? AND asset = ?';
+      await execQuery3(queryUpdate, [free, locked, accid, asset]);
+      changed = true;
+      a = "update";
+    }
+  } else {
+    // Insere um novo registro se os valores de free e locked forem maiores que 0
+    if (free > 0) {
+      const queryInsert = 'INSERT INTO accs_balances_spot (accid, asset, free, locked, datatime) VALUES (?, ?, ?, ?, now())';
+      const r = await execQuery3(queryInsert, [accid, asset, free, locked]);
+      changed = true;
+      a = "insert";
+    }
+  }
+  return changed;
+}
+
 async function updateAccInvestiment(accid, investment) {
   const invest = Math.floor(investment * 100) / 100;
   const query = `UPDATE accs SET investment = '${invest}' WHERE accid = ${accid}`;
@@ -166,6 +206,12 @@ async function updateAccInvestiment(accid, investment) {
   return resultado;
 }
 
+async function updateAccSpotInvestiment(accid, investment_spot) {
+  const invest = Math.floor(investment_spot * 100) / 100;
+  const query = `UPDATE accs SET investment_spot = '${invest}' WHERE accid = ${accid}`;
+  const resultado = await execQuery2(query);
+  return resultado;
+}
 async function clearSymbols() {
   const query = "TRUNCATE symbols;"
   const result = await execQuery2(query);
@@ -178,14 +224,44 @@ async function insertSymbol(symbol, quantityPrecision, baseAssetPrecision, quote
   return result;
 }
 
+async function insertSpotSymbol(symbol, minQty, tickSize, status_spot) {
+  const query = `
+    INSERT INTO symbols (
+      symbol,
+      minQty,
+      tickSize,
+      status_spot
+    )
+    VALUES (?, ?, ?, ?)
+  `;
+  const params = [symbol, minQty, tickSize, status_spot];
+  const result = await execQuery3(query, params);
+  return result;
+}
+
+
 async function updateSymbol(id, symbol, quantityPrecision, baseAssetPrecision, quotePrecision, status, baseAsset, quoteAsset) {
   const query = `UPDATE symbols SET symbol = '${symbol}', quantityPrecision = '${quantityPrecision}', baseAssetPrecision = '${baseAssetPrecision}', quotePrecision = '${quotePrecision}', status = '${status}', baseAsset = '${baseAsset}', quoteAsset = '${quoteAsset}' WHERE symbols_id = ${id}`;
   const result = await execQuery2(query);
   return result;
 }
 
+async function updateSpotSymbol(id, minQty, tickSize, status_spot) {
+  const query = `
+    UPDATE symbols
+    SET
+      minQty = ?,
+      tickSize = ?,
+      status_spot = ?
+    WHERE symbols_id = ?
+  `;
+  const params = [minQty, tickSize, status_spot, id];
+  const result = await execQuery3(query, params);
+  return result;
+}
+
 async function getAllBdSymbols() {
-  const query = `SELECT symbols_id, symbol, status, quantityPrecision FROM symbols`;
+  const query = `SELECT symbols_id, symbol, status, quantityPrecision, tickSize, minQty, status_spot FROM symbols`;
   const result = await execQuery2(query);
   return result;
 }
@@ -349,5 +425,11 @@ module.exports = {
   checkAccPosition,
   updateAccPosition,
   deleteAccPositions,
-  getOrdersOpenAndProgrammed
+  getOrdersOpenAndProgrammed,
+  updateBalanceSpot,
+  updateAccSpotInvestiment,
+  getOrdens2Spot,
+  setOrderSpotStateDone,
+  insertSpotSymbol,
+  updateSpotSymbol
 };

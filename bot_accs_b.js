@@ -1,6 +1,6 @@
 require('dotenv').config();
-const { accFuturesBalance, getfuturesIncome, getOrderStatus } = require('./binance');
-const { getAccs, updateBalance, updateAccInvestiment, updateOrder, getNewOrders } = require('./execQuery');
+const { accFuturesBalance, getfuturesIncome, getOrderStatus, accSpotBalance } = require('./binance');
+const { getAccs, updateBalance, updateAccInvestiment, updateOrder, getNewOrders, updateBalanceSpot, updateAccSpotInvestiment } = require('./execQuery');
 const { escreveLog, escreveLogJson } = require('./log');
 const log_file = process.env.LOG_ACCS;
 
@@ -85,6 +85,9 @@ async function updateAccsbalances2() {
                         if (item.asset === "USDT" && investment == 0) {
                             await updateAccInvestiment(accid, item.balance);
                         }
+                        if (item.asset === "USDT" &&  item.balance > investment) {
+                            await updateAccInvestiment(accid, item.balance);
+                        }
                     }));
                 }
             } catch (error) {
@@ -97,8 +100,50 @@ async function updateAccsbalances2() {
     }
 }
 
+async function updateAccsbalancesSpot() {
+    try {
+        escreveLog("UpdateAccs", log_file);
+        let balances;
+        const accs = await getAccs();
+        const promises = accs.map(async (acc) => {
+            const { accid, apiKey, apiSecret, investment_spot } = acc;
+            escreveLog(`ACCID: ${accid}, invest: ${investment_spot}, apiKey: ${apiKey}`, log_file);
+
+            try {
+                balances = await accSpotBalance(apiKey, apiSecret);
+                if (balances.code && balances.msg) {
+                    escreveLogJson(`ACCID: ${accid} ERROR`, balances, log_file);
+                } else {
+                    //console.log(balances);
+                    
+                    await Promise.all(balances.map(async (item) => {
+                        const changed = await updateBalanceSpot(accid, item.asset, item.free, item.locked);
+                        if (changed) {
+                            escreveLog(`changed ACCID: ${accid}, Asset: ${item.asset}, Free: ${item.free}, Locked: ${item.locked}`, log_file);
+                        }
+                        if (item.asset === "USDT" && investment_spot == 0) {
+                            await updateAccSpotInvestiment(accid, item.free);
+                        }
+                        if (item.asset === "USDT" &&  item.free > investment_spot) {
+                            await updateAccSpotInvestiment(accid, item.free);
+                        }
+                    }));
+                    
+                }
+            } catch (error) {
+                escreveLogJson(`ACCID: ${accid}, ERROR:`, error, log_file);
+            }
+
+        });
+        await Promise.all(promises);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 module.exports = {
     updateAccsbalances,
     updateOrderStatus,
-    updateAccsbalances2
+    updateAccsbalances2,
+    updateAccsbalancesSpot
 };
