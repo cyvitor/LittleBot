@@ -7,6 +7,7 @@ const log_file = process.env.LOG_WS;
 let ws;
 let reconnectInterval = 1000 * 60; // Intervalo de reconexão reduzido para 1 minuto
 let checkConnectionInterval = 1000 * 30; // Verifica a conexão a cada 30 segundos
+let isReconnecting = false;
 
 function connectWebSocket() {
     escreveLog('Init BOT WS', log_file);
@@ -31,61 +32,68 @@ function connectWebSocket() {
     });
 
     ws.onmessage = async (event) => {
-        const miniTicker = JSON.parse(event.data);
+		try {
+			const miniTicker = JSON.parse(event.data);
 
-        const ordens = await getOrdersOpenAndProgrammed();
-        ordens.forEach((orden) => {
-            const { id, symbol, side, status, target1, startPrice, startOp, stopLoss } = orden;
-            const ticker = miniTicker.find(t => t.s === symbol);
-            const tickerC = ticker?.c ? ticker.c : null;
+			const ordens = await getOrdersOpenAndProgrammed();
+			ordens.forEach((orden) => {
+				const { id, symbol, side, status, target1, startPrice, startOp, stopLoss } = orden;
+				const ticker = miniTicker.find(t => t.s === symbol);
+				const tickerC = ticker?.c ? ticker.c : null;
 
-            if (tickerC) {
-                updatePrice(id, tickerC);
-                if (status == 4) {
-					console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} ticker = ${tickerC} ${startOp} startPrice: ${startPrice}`);
-                    if (startPrice == 0) {
-                        setStartOrder(id, tickerC);
-                        escreveLog(`ID: ${id} Inicia posição NOW`, log_file);
-                    } else {
-                        if (startOp === '<' && tickerC <= startPrice) {
-                            escreveLog(`ID: ${id} Inicia posição t1: ${tickerC} <= ${startPrice}`, log_file);
-                            setStartOrder(id, tickerC);
-                        } else if (startOp === '>' && tickerC >= startPrice) {
-                            escreveLog(`ID: ${id} Inicia posição t2: ${tickerC} >= ${startPrice}`, log_file);
-                            setStartOrder(id, tickerC);
-                        }
-                    }
-                } else if (status == 5) {
-					console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} Target: ${target1} Loss: ${stopLoss}  ticker = ${tickerC} `);
-                    if (side === 'BUY') {
-                        if (!!target1 && tickerC >= target1) {
-                            escreveLog(`ID: ${id} Fecha posição comprada: ${tickerC} >= ${target1}`, log_file);
-                            setStopOrder(id, tickerC);
-                        } else if (!!stopLoss && tickerC <= stopLoss) {
-                            escreveLog(`ID: ${id} Fecha posição comprada STOP LOSS: ${tickerC} <= ${stopLoss}`, log_file);
-                            setStopOrder(id, tickerC);
-                        }
-                    } else if (side === 'SELL') {
-                        if (!!target1 && tickerC <= target1) {
-                            escreveLog(`ID: ${id} Fecha posição vendida: ${tickerC} <= ${target1}`, log_file);
-                            setStopOrder(id, tickerC);
-                        } else if (!!stopLoss && tickerC >= stopLoss) {
-                            escreveLog(`ID: ${id} Fecha posição vendida STOP LOSS: ${tickerC} >= ${stopLoss}`, log_file);
-                            setStopOrder(id, tickerC);
-                        }
-                    }
-                }
-            }
-        });
+				if (tickerC) {
+					updatePrice(id, tickerC);
+					if (status == 4) {
+						console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} ticker = ${tickerC} ${startOp} startPrice: ${startPrice}`);
+						if (startPrice == 0) {
+							setStartOrder(id, tickerC);
+							escreveLog(`ID: ${id} Inicia posição NOW`, log_file);
+						} else {
+							if (startOp === '<' && tickerC <= startPrice) {
+								escreveLog(`ID: ${id} Inicia posição t1: ${tickerC} <= ${startPrice}`, log_file);
+								setStartOrder(id, tickerC);
+							} else if (startOp === '>' && tickerC >= startPrice) {
+								escreveLog(`ID: ${id} Inicia posição t2: ${tickerC} >= ${startPrice}`, log_file);
+								setStartOrder(id, tickerC);
+							}
+						}
+					} else if (status == 5) {
+						console.log(`ID: ${id} Symbol: ${symbol} side: ${side} st: ${status} Target: ${target1} Loss: ${stopLoss}  ticker = ${tickerC} `);
+						if (side === 'BUY') {
+							if (!!target1 && tickerC >= target1) {
+								escreveLog(`ID: ${id} Fecha posição comprada: ${tickerC} >= ${target1}`, log_file);
+								setStopOrder(id, tickerC);
+							} else if (!!stopLoss && tickerC <= stopLoss) {
+								escreveLog(`ID: ${id} Fecha posição comprada STOP LOSS: ${tickerC} <= ${stopLoss}`, log_file);
+								setStopOrder(id, tickerC);
+							}
+						} else if (side === 'SELL') {
+							if (!!target1 && tickerC <= target1) {
+								escreveLog(`ID: ${id} Fecha posição vendida: ${tickerC} <= ${target1}`, log_file);
+								setStopOrder(id, tickerC);
+							} else if (!!stopLoss && tickerC >= stopLoss) {
+								escreveLog(`ID: ${id} Fecha posição vendida STOP LOSS: ${tickerC} >= ${stopLoss}`, log_file);
+								setStopOrder(id, tickerC);
+							}
+						}
+					}
+				}
+			});
+		} catch (error) {
+			escreveLog(`Erro ao processar mensagem WebSocket: ${error}`, log_file);
+		}
     }
 }
 
 function attemptReconnect() {
-    if (ws && ws.readyState !== WebSocket.OPEN) {
-        console.log('Attempting to reconnect WebSocket...');
-        escreveLog('Attempting to reconnect WebSocket...', log_file);
-        setTimeout(connectWebSocket, reconnectInterval); // Reconecta após o intervalo
-    }
+    if (isReconnecting || (ws && ws.readyState === WebSocket.OPEN)) return;
+    isReconnecting = true;
+    console.log('Attempting to reconnect WebSocket...');
+    escreveLog('Attempting to reconnect WebSocket...', log_file);
+    setTimeout(() => {
+        connectWebSocket();
+        isReconnecting = false;
+    }, reconnectInterval);
 }
 
 function checkConnection() {
