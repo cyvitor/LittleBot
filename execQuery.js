@@ -104,12 +104,27 @@ async function setOrderStateClosed(id) {
   return resultado;
 }
 
+async function setSpotOrderStateClosed(id) {
+  const query = 'UPDATE ordens_spot SET status = 3 WHERE id = ?';
+  const resultado = await execQuery3(query, [id]);
+  return resultado;
+}
+
 // Função getAccOnOrder
 async function getAccOnOrder(id) {
   const query = `SELECT o.acc_id as accid, o.order_id, o.origQty as quant, a.apiKey, a.apiSecret
                  FROM accs_orders o
                  JOIN accs a ON o.acc_id = a.accid
                  WHERE o.order_id = ?`;
+  const resultado = await execQuery3(query, [id]);
+  return resultado;
+}
+
+async function getAccOnOrderSpot(id) {
+  const query = `SELECT o.acc_id as accid, o.order_spot_id, o.acquiredAmount as quant, a.apiKey, a.apiSecret
+                 FROM accs_orders_spot o
+                 JOIN accs a ON o.acc_id = a.accid
+                 WHERE o.order_spot_id = ?`;
   const resultado = await execQuery3(query, [id]);
   return resultado;
 }
@@ -126,8 +141,20 @@ async function getOrdersOpenAndProgrammed() {
   return resultado;
 }
 
+async function getOrdersSpotOpenAndProgrammed() {
+  const query = 'SELECT * FROM ordens_spot where status IN (1, 4, 5)';
+  const resultado = await execQuery2(query);
+  return resultado;
+}
+
 async function setStartOrder(id, price) {
   const query = 'UPDATE ordens SET status = ?, price = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [0, price, id]);
+  return resultado;
+}
+
+async function setStartSpotOrder(id, price) {
+  const query = 'UPDATE ordens_spot SET status = ?, price = ? WHERE id = ?';
   const resultado = await execQuery3(query, [0, price, id]);
   return resultado;
 }
@@ -138,8 +165,20 @@ async function setOrdersProgrammedClose(id) {
   return resultado;
 }
 
+async function setOrdersSpotProgrammedClose(id) {
+  const query = 'UPDATE ordens_spot SET status = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [5, id]);
+  return resultado;
+}
+
 async function setStopOrder(id, price) {
   const query = 'UPDATE ordens SET status = ?, price = ? WHERE id = ?';
+  const resultado = await execQuery3(query, [2, price, id]);
+  return resultado;
+}
+
+async function setStopSpotOrder(id, price) {
+  const query = 'UPDATE ordens_spot SET status = ?, price = ? WHERE id = ?';
   const resultado = await execQuery3(query, [2, price, id]);
   return resultado;
 }
@@ -272,6 +311,12 @@ async function updatePrice(id, price) {
   return resultado;
 }
 
+async function updateSpotPrice(id, price) {
+  const query = `UPDATE ordens_spot SET price = ? WHERE id = ?`;
+  const resultado = await execQuery3(query, [price, id]);
+  return resultado;
+}
+
 async function getAcc(id) {
   const query = 'SELECT * FROM accs where accid = ' + id;
   const resultado = await execQuery2(query);
@@ -392,6 +437,46 @@ async function getPositionToClose() {
   return resultado;
 }
 
+async function saveAccOrderSpot(
+  acc_id,
+  order_spot_id,
+  orderId,
+  origQty,
+  executedQty,
+  status,
+  type,
+  side,
+  fills,
+  acquiredAmount
+) {
+  const query = `
+    INSERT INTO accs_orders_spot 
+    (acc_id, order_spot_id, orderId, origQty, executedQty, status, type, side, fills, acquiredAmount, datatime)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+  `;
+
+  const params = [
+    acc_id,
+    order_spot_id,
+    orderId,
+    parseFloat(origQty), // Garante que seja número
+    parseFloat(executedQty), // Garante que seja número
+    status,
+    type,
+    side,
+    JSON.stringify(fills), // Converte para string JSON
+    parseFloat(acquiredAmount) // Garante que seja número
+  ];
+
+  try {
+    const result = await execQuery3(query, params);
+    return result.insertId; // Retorna o ID do registro inserido
+  } catch (error) {
+    console.error("Error inserting into accs_orders_spot:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   execQuery,
   getOrdens,
@@ -431,5 +516,13 @@ module.exports = {
   getOrdens2Spot,
   setOrderSpotStateDone,
   insertSpotSymbol,
-  updateSpotSymbol
+  updateSpotSymbol,
+  saveAccOrderSpot,
+  setOrdersSpotProgrammedClose,
+  getOrdersSpotOpenAndProgrammed,
+  updateSpotPrice,
+  setStopSpotOrder,
+  setStartSpotOrder,
+  setSpotOrderStateClosed,
+  getAccOnOrderSpot
 };

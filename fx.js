@@ -52,7 +52,7 @@ async function getSpotInfo() {
     const allBdSymbols = await getAllBdSymbols();
     info.forEach((symbolInfo) => {
         const { symbol, tickSize, minQty, status } = symbolInfo;
-        console.log(`${symbol}, ${minQty}, ${tickSize}, ${status}`);
+        //console.log(`${symbol}, ${minQty}, ${tickSize}, ${status}`);
   
         const find = allBdSymbols.find(s => s.symbol === symbol);
         const isOnBD = find?.symbol ? find.symbol : null;
@@ -189,7 +189,35 @@ function getDecimalPlaces(minQty) {
   
     // Retorna o comprimento da parte decimal, ou 0 se não houver
     return decimals ? decimals.length : 0;
-  }
+}
+
+function calculateAcquiredAmount(result) {
+    // Extrair informações relevantes do objeto
+    const executedQty = parseFloat(result.executedQty); // Quantidade executada
+    const executedQtyStr = result.executedQty; // Quantidade executada como string
+
+    // Determinar o número de casas decimais válidas
+    const decimalPlaces = executedQtyStr.includes('.') 
+        ? executedQtyStr.split('.')[1].replace(/0+$/, '').length 
+        : 0;
+
+    const fills = result.fills; // Detalhes da transação
+
+    // Iterar sobre os fills para verificar a comissão
+    for (const fill of fills) {
+        const commission = parseFloat(fill.commission); // Comissão cobrada
+        const commissionAsset = fill.commissionAsset;  // Moeda da comissão
+
+        // Verificar se a comissão foi cobrada na mesma moeda comprada
+        if (commissionAsset === result.symbol.replace('USDT', '')) {
+            // Retornar a quantidade adquirida deduzida da comissão
+            return parseFloat((executedQty - commission).toFixed(decimalPlaces));
+        }
+    }
+
+    // Se nenhuma comissão foi na mesma moeda, retornar a quantidade executada
+    return parseFloat(executedQty.toFixed(decimalPlaces));
+}
 
 module.exports = {
     runActionEvery30min,
@@ -197,5 +225,6 @@ module.exports = {
     getInfo,
     updateAccsPositions,
     closePositions,
-    getDecimalPlaces
+    getDecimalPlaces,
+    calculateAcquiredAmount
 }
