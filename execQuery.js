@@ -447,12 +447,13 @@ async function saveAccOrderSpot(
   type,
   side,
   fills,
-  acquiredAmount
+  acquiredAmount,
+  price
 ) {
   const query = `
     INSERT INTO accs_orders_spot 
-    (acc_id, order_spot_id, orderId, origQty, executedQty, status, type, side, fills, acquiredAmount, datatime)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    (acc_id, order_spot_id, orderId, origQty, executedQty, status, type, side, fills, acquiredAmount, price, datatime)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
   `;
 
   const params = [
@@ -465,7 +466,8 @@ async function saveAccOrderSpot(
     type,
     side,
     JSON.stringify(fills), // Converte para string JSON
-    parseFloat(acquiredAmount) // Garante que seja número
+    parseFloat(acquiredAmount), // Garante que seja número
+    parseFloat(price)
   ];
 
   try {

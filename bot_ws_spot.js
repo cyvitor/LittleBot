@@ -37,7 +37,7 @@ function connectWebSocketSpot() {
 
 			const ordens = await getOrdersSpotOpenAndProgrammed();
 			ordens.forEach((orden) => {
-				const { id, symbol, side, status, target1, startPrice, startOp, stopLoss } = orden;
+				const { id, symbol, side, status, target1, startPrice, startOp, stoploss } = orden;
 				const ticker = miniTicker.find(t => t.s === symbol);
 				const tickerC = ticker?.c ? ticker.c : null;
 
@@ -59,12 +59,12 @@ function connectWebSocketSpot() {
 							}
 						}
 					} else if (status == 5) {
-						console.log(`ID: ${id} Symbol: ${symbol} st: ${status} Target: ${target1} Loss: ${stopLoss} ticker = ${tickerC} `);
+						console.log(`ID: ${id} Symbol: ${symbol} st: ${status} Target: ${target1} Loss: ${stoploss} ticker = ${tickerC} `);
 						if (!!target1 && tickerC >= target1) {
 							escreveLog(`ID: ${id} Fecha posição SPOT comprada: ${tickerC} >= ${target1}`, log_file);
 							setStopSpotOrder(id, tickerC);
-						} else if (!!stopLoss && tickerC <= stopLoss) {
-							escreveLog(`ID: ${id} Fecha posição SPOT comprada STOP LOSS: ${tickerC} <= ${stopLoss}`, log_file);
+						} else if (!!stoploss && tickerC <= stoploss) {
+							escreveLog(`ID: ${id} Fecha posição SPOT comprada STOP LOSS: ${tickerC} <= ${stoploss}`, log_file);
 							setStopSpotOrder(id, tickerC);
 						}
 					}

@@ -154,7 +154,7 @@ setInterval(async () => {
                 escreveLogJson(`ACCID: ${accid}, SpotOrdemID: ${id}, acquiredAmount: ${acquiredAmount} `, result, log_file);            
                 
                 if (result['orderId']) {
-                  saveAccOrderSpot(accid, id, result['orderId'], result['origQty'], result['executedQty'], result['status'], result['type'], result['side'], result['fills'], acquiredAmount);
+                  saveAccOrderSpot(accid, id, result['orderId'], result['origQty'], result['executedQty'], result['status'], result['type'], result['side'], result['fills'], acquiredAmount, result['fills'][0]['price']);
                 } else {
                   saveMsg(accid, result['msg'], result['code']);
                 }
@@ -182,7 +182,7 @@ setInterval(async () => {
                 result = await sendSpotOrder(apiKey, apiSecret, symbol, "SELL", "MARKET", quant);
                 escreveLogJson(`ACCID: ${accid}, SpotOrdemID: ${id}`, result, log_file);
                 if (result['orderId']) {
-                  saveAccOrderSpot(accid, id, result['orderId'], result['origQty'], result['executedQty'], result['status'], result['type'], result['side'], result['fills'], 0);
+                  saveAccOrderSpot(accid, id, result['orderId'], result['origQty'], result['executedQty'], result['status'], result['type'], result['side'], result['fills'], 0, result['fills'][0]['price']);
                 } else {
                   saveMsg(accid, result['msg'], result['code']);
                 }
